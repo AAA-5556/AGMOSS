@@ -52,7 +52,8 @@ label {
 
 input[type="text"],
 input[type="password"],
-input[type="date"] {
+input[type="date"],
+select {
     width: 100%;
     padding: 12px;
     border: 1px solid #ccc;
@@ -63,7 +64,8 @@ input[type="date"] {
 
 input[type="text"]:focus,
 input[type="password"]:focus,
-input[type="date"]:focus {
+input[type="date"]:focus,
+select:focus {
     outline: none;
     border-color: #007bff;
 }
@@ -101,7 +103,7 @@ button:disabled {
     min-height: 20px;
 }
 
-/* Table Styles for future pages */
+/* Table Styles */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -119,7 +121,7 @@ th {
     font-weight: 600;
 }
 
-/* Header for attendance and admin pages */
+/* Page Header */
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -147,36 +149,33 @@ th {
     color: white;
 }
 
-/* =================================== */
-/* استایل دکمه‌های تب (Tab Styles)    */
-/* =================================== */
-
+/* Tab Button Styles */
 .tab-buttons {
     display: flex;
-    border-bottom: 2px solid #dee2e6; /* خط جداکننده تمیز */
+    border-bottom: 2px solid #dee2e6;
     margin-bottom: 25px;
 }
 
 .tab-button {
     font-size: 16px;
     font-weight: 500;
-    color: #6c757d; /* رنگ خنثی برای تب غیرفعال */
+    color: #6c757d;
     background-color: transparent;
     border: none;
-    border-bottom: 3px solid transparent; /* برای خط زیرین تب فعال */
+    border-bottom: 3px solid transparent;
     padding: 12px 20px;
     cursor: pointer;
-    margin-bottom: -2px; /* برای همپوشانی خط زیرین */
+    margin-bottom: -2px;
     transition: color 0.2s, border-color 0.2s;
 }
 
 .tab-button:hover {
-    color: #0056b3; /* تغییر رنگ با رفتن موس روی آن */
+    color: #0056b3;
 }
 
 .tab-button.active {
-    color: #007bff; /* رنگ اصلی برای تب فعال */
-    border-bottom-color: #007bff; /* خط رنگی زیر تب فعال */
+    color: #007bff;
+    border-bottom-color: #007bff;
 }
 
 .tab-content {
@@ -187,30 +186,94 @@ th {
     display: block;
 }
 
+/* Dashboard & Stat Card Styles */
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #eee;
+}
 
-/* =================================== */
-/* بخش واکنش‌گرا برای موبایل      */
-/* =================================== */
+.stat-card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+}
 
+.stat-card h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: #0056b3;
+}
+
+.stat-card p {
+    margin: 8px 0;
+    font-size: 0.95em;
+    color: #333;
+}
+
+.stat-card .highlight {
+    font-weight: bold;
+    color: #000;
+}
+
+.stat-card .present {
+    color: green;
+}
+
+.stat-card .absent {
+    color: red;
+}
+
+/* Controls section for filters */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+.controls .form-group {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+.controls button {
+    width: auto;
+    flex-shrink: 0;
+}
+
+
+/* Responsive Styles for Mobile */
 @media (max-width: 600px) {
     body {
-        padding: 10px; /* کاهش فاصله از کناره‌های صفحه در موبایل */
+        padding: 10px;
     }
 
     .container, .login-container {
-        padding: 20px; /* کاهش فاصله داخلی کادرها */
+        padding: 20px;
     }
 
     h1 {
-        font-size: 1.8em; /* کمی کوچک‌تر کردن عنوان اصلی */
+        font-size: 1.8em;
     }
 
     h2 {
-        font-size: 1.5em; /* کمی کوچک‌تر کردن عناوین فرعی */
+        font-size: 1.5em;
     }
     
     .page-header {
-        flex-direction: column; /* چیدن عنوان و دکمه خروج زیر هم */
-        gap: 15px; /* ایجاد فاصله بین آنها */
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
