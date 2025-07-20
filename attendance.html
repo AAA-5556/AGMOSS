@@ -3,36 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ثبت حضور و غیاب</title>
+    <title>پنل موسسه</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* استایل‌های ساده برای تب‌ها */
+        .tab-buttons { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+        .tab-button { background: #eee; border: 1px solid #ccc; padding: 10px 20px; cursor: pointer; }
+        .tab-button.active { background: #fff; border-bottom-color: #fff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
 </head>
 <body>
-
     <div class="container">
         <header class="page-header">
             <h2 id="institute-name">بارگذاری...</h2>
             <button id="logout-button">خروج</button>
         </header>
 
-        <h3>حضور و غیاب روز: <span id="current-date"></span></h3>
+        <div class="tab-buttons">
+            <button class="tab-button active" data-tab="register">ثبت حضور و غیاب</button>
+            <button class="tab-button" data-tab="history">تاریخچه</button>
+        </div>
 
-        <form id="attendance-form">
-            <table>
-                <thead>
-                    <tr>
-                        <th>نام عضو</th>
-                        <th>وضعیت</th>
-                    </tr>
-                </thead>
-                <tbody id="member-list-body">
-                    </tbody>
+        <div id="register-tab" class="tab-content active">
+            <h3>حضور و غیاب روز: <span id="current-date"></span></h3>
+            <form id="attendance-form">
+                <table>
+                    <thead><tr><th>نام عضو</th><th>وضعیت</th></tr></thead>
+                    <tbody id="member-list-body"></tbody>
+                </table>
+                <br>
+                <button type="submit" id="submit-attendance">ثبت نهایی</button>
+                <p id="status-message" class="error-message"></p>
+            </form>
+        </div>
+
+        <div id="history-tab" class="tab-content">
+            <h3>تاریخچه حضور و غیاب‌های ثبت شده</h3>
+            <button id="export-history-excel" style="width: auto; margin-bottom: 15px;">دانلود اکسل</button>
+            <table id="history-table">
+                <thead><tr><th>تاریخ</th><th>نام عضو</th><th>وضعیت</th></tr></thead>
+                <tbody id="history-table-body"></tbody>
             </table>
-            <br>
-            <button type="submit" id="submit-attendance">ثبت نهایی</button>
-            <p id="status-message" class="error-message"></p>
-        </form>
+        </div>
     </div>
-
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="attendance.js"></script>
 </body>
 </html>
