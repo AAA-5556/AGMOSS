@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const memberProfileView = document.getElementById('member-profile-view');
     const memberProfileName = document.getElementById('member-profile-name');
 
-
     // --- متغیرهای وضعیت ---
     let allRecords = []; 
     let memberNames = {};
@@ -60,11 +59,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             dashboardContainer.appendChild(card);
             institutionNames[stat.id] = stat.name;
         });
-        populateFilters();
+        populateFilters(); // <<<< این تابع حالا وجود دارد
     }
-    
+
+    function populateFilters() {
+        institutionFilter.innerHTML = '<option value="all">همه موسسات</option>';
+        Object.keys(institutionNames).forEach(id => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = institutionNames[id];
+            institutionFilter.appendChild(option);
+        });
+    }
+
     function renderPage() {
-        memberProfileView.style.display = 'none'; // مخفی کردن پروفایل عضو هنگام نمایش جدول اصلی
+        memberProfileView.style.display = 'none';
         const filteredRecords = applyAllFilters();
         
         const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
@@ -87,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         records.forEach(record => {
             const recordDate = record.date.split('،')[0].trim();
-            if (recordDate !== lastDate && !currentFilters.memberId) { // فقط در نمای کلی گروه‌بندی کن
+            if (recordDate !== lastDate && !currentFilters.memberId) {
                 const dateRow = document.createElement('tr');
                 dateRow.innerHTML = `<td colspan="4" class="date-group-header">تاریخ: ${recordDate}</td>`;
                 adminDataBody.appendChild(dateRow);
@@ -124,11 +133,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         paginationContainer.appendChild(createButton('قبلی', currentPage - 1, currentPage === 1));
-
         for (let i = 1; i <= totalPages; i++) {
             paginationContainer.appendChild(createButton(i, i, false, i === currentPage));
         }
-        
         paginationContainer.appendChild(createButton('بعدی', currentPage + 1, currentPage === totalPages));
     }
 
@@ -180,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.preventDefault();
             currentFilters.memberId = e.target.dataset.memberId;
             memberProfileName.textContent = `تاریخچه عضو: ${e.target.textContent}`;
-            memberProfileView.style.display = 'block'; // نمایش بخش پروفایل
+            memberProfileView.style.display = 'block';
             currentPage = 1;
             renderPage();
         }
@@ -204,12 +211,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             "تاریخ و زمان": record.date,
             "وضعیت": record.status,
         }));
-
         if (dataToExport.length === 0) {
             alert("داده‌ای برای خروجی گرفتن وجود ندارد.");
             return;
         }
-
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب");
@@ -235,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); }
             });
             if (adminDataResult.status === 'success') {
-                allRecords = adminDataResult.data.sort((a, b) => new Date(b.date.split('،')[0].trim().replace(/\//g, '-')) - new Date(a.date.split('،')[0].trim().replace(/\//g, '-'))); // مرتب‌سازی بر اساس تاریخ
+                allRecords = adminDataResult.data.sort((a, b) => new Date(b.date.split('،')[0].trim().replace(/\//g, '-')) - new Date(a.date.split('،')[0].trim().replace(/\//g, '-')));
                 renderPage();
             }
             
