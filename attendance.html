@@ -33,11 +33,27 @@
 
         <div id="history-tab" class="tab-content">
             <h3>تاریخچه حضور و غیاب‌های ثبت شده</h3>
-            <button id="export-history-excel" style="width: auto; margin-bottom: 15px;">دانلود اکسل</button>
+            
+            <div class="controls secondary-filters">
+                <div class="form-group status-filter">
+                    <label>فیلتر بر اساس وضعیت:</label>
+                    <div>
+                        <button class="filter-btn active" data-status="all">همه</button>
+                        <button class="filter-btn" data-status="حاضر">فقط حاضرین</button>
+                        <button class="filter-btn" data-status="غایب">فقط غایبین</button>
+                    </div>
+                </div>
+                 <div class="form-group">
+                    <button id="export-history-excel">دانلود اکسل</button>
+                </div>
+            </div>
+
             <table id="history-table">
-                <thead><tr><th>تاریخ</th><th>نام عضو</th><th>وضعیت</th></tr></thead>
+                <thead><tr><th>تاریخ و زمان</th><th>نام عضو</th><th>وضعیت</th></tr></thead>
                 <tbody id="history-table-body"></tbody>
             </table>
+            
+            <div id="history-pagination-container" class="pagination"></div>
         </div>
     </div>
     
