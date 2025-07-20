@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // ❗ Important: Paste the API URL you got from Google Script here.
+    // ❗ Important: Paste your API URL here.
     const API_URL = "https://script.google.com/macros/s/AKfycbyFhhTg_2xf6TqTBdybO883H4f6562sTDUSY8dbQJyN2K-nmFVD7ViTgWllEPwOaf7V/exec";
 
+    // --- Element Selectors ---
+    const dashboardContainer = document.getElementById('dashboard-container');
     const adminDataBody = document.getElementById('admin-data-body');
     const loadingMessage = document.getElementById('loading-message');
     const logoutButton = document.getElementById('logout-button');
@@ -10,84 +12,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetFiltersButton = document.getElementById('reset-filters');
     const exportExcelButton = document.getElementById('export-excel');
 
-    let allRecords = []; // To store all fetched records
-    let memberNames = {}; // To store member names { memberId: "FullName" }
-    let institutionNames = {}; // To store institution names { institutionId: "Username" }
+    // --- Global State ---
+    let allRecords = []; // Stores all attendance records
+    let memberNames = {}; // Stores member names { memberId: "FullName" }
+    let institutionNames = {}; // Stores institution names { institutionId: "Username" }
 
-    // --- 1. Authentication Check ---
+    // --- 1. Authentication & Logout ---
     const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (!userData || userData.role !== 'admin') {
         window.location.href = 'index.html';
         return;
     }
-
-    // --- 2. Logout ---
     logoutButton.addEventListener('click', () => {
         sessionStorage.removeItem('userData');
         window.location.href = 'index.html';
     });
 
-    // --- 3. Fetch All Data ---
-    async function fetchAllData() {
-        try {
-            // A. Fetch all attendance records
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'getAdminData' })
-            });
-            const result = await response.json();
-            if (result.status !== 'success') throw new Error('Failed to fetch admin data');
-            allRecords = result.data;
-            
-            // B. Fetch all members from all institutions to get their names
-            // Note: In a real-world app with many institutions, this would be optimized.
-            const memberPromises = [];
-            // Assuming we have users user1 to user5 with IDs 1 to 5 from our Google Sheet.
-            const allUsers = [ // We need a way to get user info. For now, we hardcode it.
-                { username: 'user1', institutionId: 1 }, { username: 'user2', institutionId: 2 },
-                { username: 'user3', institutionId: 3 }, { username: 'user4', institutionId: 4 },
-                { username: 'user5', institutionId: 5 }
-            ];
-
-            allUsers.forEach(user => {
-                institutionNames[user.institutionId] = user.username; // Store institution name
-                const memberPromise = fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'getMembers', payload: { institutionId: user.institutionId } })
-                }).then(res => res.json());
-                memberPromises.push(memberPromise);
-            });
-
-            const memberResults = await Promise.all(memberPromises);
-            memberResults.forEach(res => {
-                if (res.status === 'success') {
-                    res.data.forEach(member => {
-                        memberNames[member.memberId] = member.fullName;
-                    });
-                }
-            });
-
-            // C. Populate filters and render the table
-            populateFilters();
-            renderTable(allRecords);
-            loadingMessage.style.display = 'none';
-
-        } catch (error) {
-            console.error('Error fetching all data:', error);
-            loadingMessage.textContent = 'خطا در بارگذاری اطلاعات.';
-        }
+    // --- 2. Rendering Functions ---
+    function renderDashboard(stats) {
+        dashboardContainer.innerHTML = '';
+        stats.forEach(stat => {
+            const card = document.createElement('div');
+            card.className = 'stat-card';
+            card.innerHTML = `
+                <h3>${stat.name}</h3>
+                <p>Total Members: <span class="highlight">${stat.memberCount}</span></p>
+                <p>Last Update: <span class="highlight">${stat.lastUpdate}</span></p>
+                <p>
+                    Last Day's Stats: 
+                    <span class="highlight present">${stat.present} Present</span> / 
+                    <span class="highlight absent">${stat.absent} Absent</span>
+                </p>
+            `;
+            dashboardContainer.appendChild(card);
+            // Also populate the institutionNames map for later use
+            institutionNames[stat.id] = stat.name;
+        });
+        populateFilters(); // Populate the dropdown after getting names
     }
 
-    // --- 4. Render Table ---
     function renderTable(records) {
         adminDataBody.innerHTML = '';
         if (records.length === 0) {
-            adminDataBody.innerHTML = '<tr><td colspan="4">هیچ رکوردی برای نمایش یافت نشد.</td></tr>';
+            adminDataBody.innerHTML = '<tr><td colspan="4">No records found matching your criteria.</td></tr>';
             return;
         }
-
         records.forEach(record => {
             const row = document.createElement('tr');
             const memberName = memberNames[record.memberId] || `(ID: ${record.memberId})`;
@@ -103,8 +72,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- 5. Filtering ---
+    // --- 3. Data Fetching ---
+    async function initializeAdminPanel() {
+        loadingMessage.textContent = 'Loading stats and reports...';
+        try {
+            // Fetch dashboard stats, all attendance records, and all members in parallel
+            const [dashboardResult, adminDataResult, ...memberResults] = await Promise.all([
+                fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getDashboardStats' }) }).then(res => res.json()),
+                fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData' }) }).then(res => res.json()),
+                // Assuming institutions 1 through 5 exist
+                ...[1, 2, 3, 4, 5].map(id => 
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getMembers', payload: { institutionId: id } }) }).then(res => res.json())
+                )
+            ]);
+
+            // Process dashboard data
+            if (dashboardResult.status === 'success') {
+                renderDashboard(dashboardResult.data);
+            } else {
+                dashboardContainer.innerHTML = '<p>Error loading dashboard.</p>';
+            }
+
+            // Process member names into a map for easy lookup
+            memberResults.forEach(res => {
+                if (res.status === 'success') {
+                    res.data.forEach(member => {
+                        memberNames[member.memberId] = member.fullName;
+                    });
+                }
+            });
+
+            // Process and render the main attendance table
+            if (adminDataResult.status === 'success') {
+                allRecords = adminDataResult.data.reverse(); // Show newest first
+                renderTable(allRecords);
+            } else {
+                adminDataBody.innerHTML = '<tr><td colspan="4">Error loading reports.</td></tr>';
+            }
+            
+            loadingMessage.style.display = 'none';
+
+        } catch (error) {
+            console.error('Error initializing admin panel:', error);
+            loadingMessage.textContent = 'Error connecting to the server.';
+        }
+    }
+
+    // --- 4. Filtering Logic ---
     function populateFilters() {
+        // This is now called within renderDashboard
         Object.keys(institutionNames).forEach(id => {
             const option = document.createElement('option');
             option.value = id;
@@ -121,53 +137,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             filteredRecords = filteredRecords.filter(record => record.institutionId == selectedInstitution);
         }
 
-        const selectedDate = dateFilter.value; // Date in YYYY-MM-DD format
+        const selectedDate = dateFilter.value;
         if (selectedDate) {
-            // Convert to Persian date string for comparison
             const persianDate = new Date(selectedDate).toLocaleDateString('fa-IR');
             filteredRecords = filteredRecords.filter(record => record.date === persianDate);
         }
 
         renderTable(filteredRecords);
     }
-    
+
     institutionFilter.addEventListener('change', applyFilters);
     dateFilter.addEventListener('change', applyFilters);
-    
+
     resetFiltersButton.addEventListener('click', () => {
         institutionFilter.value = 'all';
         dateFilter.value = '';
         renderTable(allRecords);
     });
-    
-    // --- 6. Excel Export ---
-    exportExcelButton.addEventListener('click', () => {
-        const rows = adminDataBody.querySelectorAll('tr');
-        const dataToExport = [];
-        
-        if(rows.length > 0 && !rows[0].querySelector('td[colspan="4"]')) {
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                dataToExport.push({
-                    "موسسه": cells[0].textContent,
-                    "نام عضو": cells[1].textContent,
-                    "تاریخ": cells[2].textContent,
-                    "وضعیت": cells[3].textContent,
-                });
-            });
-        }
 
-        if(dataToExport.length === 0) {
-            alert("داده ای برای خروجی گرفتن وجود ندارد.");
+    // --- 5. Excel Export ---
+    exportExcelButton.addEventListener('click', () => {
+        const tableRows = adminDataBody.querySelectorAll('tr');
+        if (tableRows.length === 0 || tableRows[0].querySelector('td[colspan="4"]')) {
+            alert("There is no data to export.");
             return;
         }
 
+        const dataToExport = Array.from(tableRows).map(row => {
+            const cells = row.querySelectorAll('td');
+            return {
+                "Institution": cells[0].textContent,
+                "Member Name": cells[1].textContent,
+                "Date": cells[2].textContent,
+                "Status": cells[3].textContent,
+            };
+        });
+
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب");
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Report");
         XLSX.writeFile(workbook, "AttendanceReport.xlsx");
     });
 
     // --- Initial Call ---
-    fetchAllData();
+    initializeAdminPanel();
 });
