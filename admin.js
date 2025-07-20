@@ -11,13 +11,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dateFilter = document.getElementById('date-filter');
     const resetFiltersButton = document.getElementById('reset-filters');
     const exportExcelButton = document.getElementById('export-excel');
+    const paginationContainer = document.getElementById('pagination-container');
+    const statusFilterButtons = document.querySelectorAll('.filter-btn');
+    const memberProfileView = document.getElementById('member-profile-view');
+    const memberProfileName = document.getElementById('member-profile-name');
 
-    // --- متغیرهای سراسری برای نگهداری داده‌ها ---
+
+    // --- متغیرهای وضعیت ---
     let allRecords = []; 
     let memberNames = {};
     let institutionNames = {};
+    let currentFilters = {
+        institution: 'all',
+        date: '',
+        status: 'all',
+        memberId: null
+    };
+    let currentPage = 1;
+    const ITEMS_PER_PAGE = 30;
 
-    // --- ۱. بررسی هویت کاربر و خروج ---
+    // --- ۱. بررسی هویت و خروج ---
     const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (!userData || userData.role !== 'admin') {
         window.location.href = 'index.html';
@@ -28,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'index.html';
     });
 
-    // --- ۲. توابع مربوط به نمایش اطلاعات ---
+    // --- ۲. توابع نمایش ---
     function renderDashboard(stats) {
         dashboardContainer.innerHTML = '';
         stats.forEach(stat => {
@@ -49,21 +62,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         populateFilters();
     }
+    
+    function renderPage() {
+        memberProfileView.style.display = 'none'; // مخفی کردن پروفایل عضو هنگام نمایش جدول اصلی
+        const filteredRecords = applyAllFilters();
+        
+        const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
+        currentPage = Math.min(currentPage, totalPages || 1);
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const pageRecords = filteredRecords.slice(startIndex, endIndex);
+
+        renderTable(pageRecords);
+        renderPagination(totalPages);
+    }
 
     function renderTable(records) {
         adminDataBody.innerHTML = '';
+        let lastDate = null;
         if (records.length === 0) {
-            adminDataBody.innerHTML = '<tr><td colspan="4">رکوردی مطابق با فیلتر شما یافت نشد.</td></tr>';
+            adminDataBody.innerHTML = '<tr><td colspan="4">رکوردی یافت نشد.</td></tr>';
             return;
         }
+
         records.forEach(record => {
+            const recordDate = record.date.split('،')[0].trim();
+            if (recordDate !== lastDate && !currentFilters.memberId) { // فقط در نمای کلی گروه‌بندی کن
+                const dateRow = document.createElement('tr');
+                dateRow.innerHTML = `<td colspan="4" class="date-group-header">تاریخ: ${recordDate}</td>`;
+                adminDataBody.appendChild(dateRow);
+                lastDate = recordDate;
+            }
+
             const row = document.createElement('tr');
             const memberName = memberNames[record.memberId] || `(شناسه: ${record.memberId})`;
             const instName = institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`;
-            
             row.innerHTML = `
                 <td>${instName}</td>
-                <td>${memberName}</td>
+                <td><a href="#" class="clickable-member" data-member-id="${record.memberId}">${memberName}</a></td>
                 <td>${record.date}</td>
                 <td>${record.status}</td>
             `;
@@ -71,9 +107,118 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- ۳. دریافت داده‌ها از سرور ---
+    function renderPagination(totalPages) {
+        paginationContainer.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const createButton = (text, page, isDisabled = false, isActive = false) => {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.disabled = isDisabled;
+            if (isActive) button.classList.add('active');
+            button.addEventListener('click', () => {
+                currentPage = page;
+                renderPage();
+            });
+            return button;
+        };
+
+        paginationContainer.appendChild(createButton('قبلی', currentPage - 1, currentPage === 1));
+
+        for (let i = 1; i <= totalPages; i++) {
+            paginationContainer.appendChild(createButton(i, i, false, i === currentPage));
+        }
+        
+        paginationContainer.appendChild(createButton('بعدی', currentPage + 1, currentPage === totalPages));
+    }
+
+    // --- ۳. منطق فیلترها ---
+    function applyAllFilters() {
+        let filtered = [...allRecords];
+        if (currentFilters.institution !== 'all') {
+            filtered = filtered.filter(r => r.institutionId == currentFilters.institution);
+        }
+        if (currentFilters.date) {
+            const persianDate = new Date(currentFilters.date).toLocaleDateString('fa-IR');
+            filtered = filtered.filter(r => r.date.startsWith(persianDate));
+        }
+        if (currentFilters.status !== 'all') {
+            filtered = filtered.filter(r => r.status === currentFilters.status);
+        }
+        if (currentFilters.memberId) {
+            filtered = filtered.filter(r => r.memberId == currentFilters.memberId);
+        }
+        return filtered;
+    }
+
+    // --- ۴. تنظیم Event Listeners ---
+    institutionFilter.addEventListener('change', (e) => {
+        currentFilters.institution = e.target.value;
+        currentFilters.memberId = null; 
+        currentPage = 1;
+        renderPage();
+    });
+
+    dateFilter.addEventListener('change', (e) => {
+        currentFilters.date = e.target.value;
+        currentPage = 1;
+        renderPage();
+    });
+
+    statusFilterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            statusFilterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilters.status = btn.dataset.status;
+            currentPage = 1;
+            renderPage();
+        });
+    });
+
+    adminDataBody.addEventListener('click', (e) => {
+        if (e.target.classList.contains('clickable-member')) {
+            e.preventDefault();
+            currentFilters.memberId = e.target.dataset.memberId;
+            memberProfileName.textContent = `تاریخچه عضو: ${e.target.textContent}`;
+            memberProfileView.style.display = 'block'; // نمایش بخش پروفایل
+            currentPage = 1;
+            renderPage();
+        }
+    });
+
+    resetFiltersButton.addEventListener('click', () => {
+        institutionFilter.value = 'all';
+        dateFilter.value = '';
+        statusFilterButtons.forEach(b => b.classList.remove('active'));
+        document.querySelector('.filter-btn[data-status="all"]').classList.add('active');
+        currentFilters = { institution: 'all', date: '', status: 'all', memberId: null };
+        currentPage = 1;
+        renderPage();
+    });
+
+    // --- ۵. خروجی اکسل ---
+    exportExcelButton.addEventListener('click', () => {
+        const dataToExport = applyAllFilters().map(record => ({
+            "موسسه": institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`,
+            "نام عضو": memberNames[record.memberId] || `(شناسه: ${record.memberId})`,
+            "تاریخ و زمان": record.date,
+            "وضعیت": record.status,
+        }));
+
+        if (dataToExport.length === 0) {
+            alert("داده‌ای برای خروجی گرفتن وجود ندارد.");
+            return;
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب");
+        XLSX.writeFile(workbook, "AttendanceReport.xlsx");
+    });
+    
+    // --- ۶. بارگذاری اولیه ---
     async function initializeAdminPanel() {
-        loadingMessage.textContent = 'در حال بارگذاری آمار و گزارش‌ها...';
+        loadingMessage.textContent = 'در حال بارگذاری...';
         try {
             const [dashboardResult, adminDataResult, ...memberResults] = await Promise.all([
                 fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getDashboardStats' }) }).then(res => res.json()),
@@ -86,85 +231,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (dashboardResult.status === 'success') {
                 renderDashboard(dashboardResult.data);
             }
-
             memberResults.forEach(res => {
-                if (res.status === 'success') {
-                    res.data.forEach(member => {
-                        memberNames[member.memberId] = member.fullName;
-                    });
-                }
+                if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); }
             });
-
             if (adminDataResult.status === 'success') {
-                allRecords = adminDataResult.data.reverse();
-                renderTable(allRecords);
+                allRecords = adminDataResult.data.sort((a, b) => new Date(b.date.split('،')[0].trim().replace(/\//g, '-')) - new Date(a.date.split('،')[0].trim().replace(/\//g, '-'))); // مرتب‌سازی بر اساس تاریخ
+                renderPage();
             }
             
             loadingMessage.style.display = 'none';
-
         } catch (error) {
             console.error('خطا در بارگذاری پنل مدیر:', error);
             loadingMessage.textContent = 'خطا در ارتباط با سرور.';
         }
     }
-
-    // --- ۴. منطق فیلترها ---
-    function populateFilters() {
-        institutionFilter.innerHTML = '<option value="all">همه موسسات</option>';
-        Object.keys(institutionNames).forEach(id => {
-            const option = document.createElement('option');
-            option.value = id;
-            option.textContent = institutionNames[id];
-            institutionFilter.appendChild(option);
-        });
-    }
-
-    function applyFilters() {
-        let filteredRecords = [...allRecords];
-        const selectedInstitution = institutionFilter.value;
-        if (selectedInstitution !== 'all') {
-            filteredRecords = filteredRecords.filter(record => record.institutionId == selectedInstitution);
-        }
-        const selectedDate = dateFilter.value;
-        if (selectedDate) {
-            // اصلاح فیلتر تاریخ برای کار با فرمت جدید تاریخ و زمان
-            const persianDate = new Date(selectedDate).toLocaleDateString('fa-IR');
-            filteredRecords = filteredRecords.filter(record => record.date.startsWith(persianDate));
-        }
-        renderTable(filteredRecords);
-    }
-
-    institutionFilter.addEventListener('change', applyFilters);
-    dateFilter.addEventListener('change', applyFilters);
-
-    resetFiltersButton.addEventListener('click', () => {
-        institutionFilter.value = 'all';
-        dateFilter.value = '';
-        renderTable(allRecords);
-    });
-
-    // --- ۵. خروجی اکسل ---
-    exportExcelButton.addEventListener('click', () => {
-        const tableRows = adminDataBody.querySelectorAll('tr');
-        if (tableRows.length === 0 || tableRows[0].querySelector('td[colspan="4"]')) {
-            alert("داده‌ای برای خروجی گرفتن وجود ندارد.");
-            return;
-        }
-        const dataToExport = Array.from(tableRows).map(row => {
-            const cells = row.querySelectorAll('td');
-            return {
-                "موسسه": cells[0].textContent,
-                "نام عضو": cells[1].textContent,
-                "تاریخ و زمان": cells[2].textContent,
-                "وضعیت": cells[3].textContent,
-            };
-        });
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب");
-        XLSX.writeFile(workbook, "AttendanceReport.xlsx");
-    });
-
-    // --- اجرای اولیه ---
+    
     initializeAdminPanel();
 });
