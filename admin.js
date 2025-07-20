@@ -45,10 +45,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </p>
             `;
             dashboardContainer.appendChild(card);
-            // همچنین نام موسسات را برای استفاده در فیلتر ذخیره می‌کنیم
             institutionNames[stat.id] = stat.name;
         });
-        populateFilters(); // فراخوانی تابع برای پر کردن فیلترها
+        populateFilters();
     }
 
     function renderTable(records) {
@@ -111,7 +110,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- ۴. منطق فیلترها ---
     function populateFilters() {
-        // برای جلوگیری از اضافه شدن گزینه‌های تکراری در هر بار فراخوانی
         institutionFilter.innerHTML = '<option value="all">همه موسسات</option>';
         Object.keys(institutionNames).forEach(id => {
             const option = document.createElement('option');
@@ -129,8 +127,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const selectedDate = dateFilter.value;
         if (selectedDate) {
+            // اصلاح فیلتر تاریخ برای کار با فرمت جدید تاریخ و زمان
             const persianDate = new Date(selectedDate).toLocaleDateString('fa-IR');
-            filteredRecords = filteredRecords.filter(record => record.date === persianDate);
+            filteredRecords = filteredRecords.filter(record => record.date.startsWith(persianDate));
         }
         renderTable(filteredRecords);
     }
@@ -156,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return {
                 "موسسه": cells[0].textContent,
                 "نام عضو": cells[1].textContent,
-                "تاریخ": cells[2].textContent,
+                "تاریخ و زمان": cells[2].textContent,
                 "وضعیت": cells[3].textContent,
             };
         });
