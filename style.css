@@ -146,6 +146,48 @@ th {
     background-color: #ff4d4d;
     color: white;
 }
+
+/* =================================== */
+/* استایل دکمه‌های تب (Tab Styles)    */
+/* =================================== */
+
+.tab-buttons {
+    display: flex;
+    border-bottom: 2px solid #dee2e6; /* خط جداکننده تمیز */
+    margin-bottom: 25px;
+}
+
+.tab-button {
+    font-size: 16px;
+    font-weight: 500;
+    color: #6c757d; /* رنگ خنثی برای تب غیرفعال */
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent; /* برای خط زیرین تب فعال */
+    padding: 12px 20px;
+    cursor: pointer;
+    margin-bottom: -2px; /* برای همپوشانی خط زیرین */
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-button:hover {
+    color: #0056b3; /* تغییر رنگ با رفتن موس روی آن */
+}
+
+.tab-button.active {
+    color: #007bff; /* رنگ اصلی برای تب فعال */
+    border-bottom-color: #007bff; /* خط رنگی زیر تب فعال */
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+
 /* =================================== */
 /* بخش واکنش‌گرا برای موبایل      */
 /* =================================== */
