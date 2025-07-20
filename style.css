@@ -277,3 +277,83 @@ th {
         align-items: stretch;
     }
 }
+/* =================================== */
+/* استایل فیلترهای پیشرفته و صفحه‌بندی */
+/* =================================== */
+
+.secondary-filters {
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    margin-top: -10px;
+}
+
+.status-filter div {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-btn {
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #ced4da;
+    font-weight: normal;
+    padding: 8px 12px;
+    width: auto;
+}
+
+.filter-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+#reset-filters {
+    background-color: #6c757d;
+}
+#reset-filters:hover {
+    background-color: #5a6268;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 25px;
+    gap: 8px;
+}
+
+.pagination button {
+    width: auto;
+    font-weight: normal;
+    background-color: #fff;
+    color: #007bff;
+    border: 1px solid #dee2e6;
+}
+
+.pagination button:hover {
+    background-color: #f8f9fa;
+}
+
+.pagination button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination button:disabled {
+    color: #6c757d;
+    cursor: not-allowed;
+    background-color: #f8f9fa;
+}
+
+.date-group-header {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    text-align: center;
+}
+
+.clickable-member {
+    color: #0056b3;
+    text-decoration: underline;
+    cursor: pointer;
+}
