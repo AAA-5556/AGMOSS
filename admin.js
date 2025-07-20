@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // ❗ Important: Paste your API URL here.
+    // ❗ مهم: لینک API خود را اینجا قرار دهید
     const API_URL = "https://script.google.com/macros/s/AKfycbyFhhTg_2xf6TqTBdybO883H4f6562sTDUSY8dbQJyN2K-nmFVD7ViTgWllEPwOaf7V/exec";
 
-    // --- Element Selectors ---
+    // --- شناسایی عناصر صفحه ---
     const dashboardContainer = document.getElementById('dashboard-container');
     const adminDataBody = document.getElementById('admin-data-body');
     const loadingMessage = document.getElementById('loading-message');
@@ -12,12 +12,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetFiltersButton = document.getElementById('reset-filters');
     const exportExcelButton = document.getElementById('export-excel');
 
-    // --- Global State ---
-    let allRecords = []; // Stores all attendance records
-    let memberNames = {}; // Stores member names { memberId: "FullName" }
-    let institutionNames = {}; // Stores institution names { institutionId: "Username" }
+    // --- متغیرهای سراسری برای نگهداری داده‌ها ---
+    let allRecords = []; 
+    let memberNames = {};
+    let institutionNames = {};
 
-    // --- 1. Authentication & Logout ---
+    // --- ۱. بررسی هویت کاربر و خروج ---
     const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (!userData || userData.role !== 'admin') {
         window.location.href = 'index.html';
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'index.html';
     });
 
-    // --- 2. Rendering Functions ---
+    // --- ۲. توابع مربوط به نمایش اطلاعات ---
     function renderDashboard(stats) {
         dashboardContainer.innerHTML = '';
         stats.forEach(stat => {
@@ -36,31 +36,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             card.className = 'stat-card';
             card.innerHTML = `
                 <h3>${stat.name}</h3>
-                <p>Total Members: <span class="highlight">${stat.memberCount}</span></p>
-                <p>Last Update: <span class="highlight">${stat.lastUpdate}</span></p>
+                <p>تعداد کل اعضا: <span class="highlight">${stat.memberCount}</span></p>
+                <p>آخرین بروزرسانی: <span class="highlight">${stat.lastUpdate}</span></p>
                 <p>
-                    Last Day's Stats: 
-                    <span class="highlight present">${stat.present} Present</span> / 
-                    <span class="highlight absent">${stat.absent} Absent</span>
+                    آمار آخرین روز: 
+                    <span class="highlight present">${stat.present} حاضر</span> / 
+                    <span class="highlight absent">${stat.absent} غایب</span>
                 </p>
             `;
             dashboardContainer.appendChild(card);
-            // Also populate the institutionNames map for later use
+            // همچنین نام موسسات را برای استفاده در فیلتر ذخیره می‌کنیم
             institutionNames[stat.id] = stat.name;
         });
-        populateFilters(); // Populate the dropdown after getting names
+        populateFilters(); // فراخوانی تابع برای پر کردن فیلترها
     }
 
     function renderTable(records) {
         adminDataBody.innerHTML = '';
         if (records.length === 0) {
-            adminDataBody.innerHTML = '<tr><td colspan="4">No records found matching your criteria.</td></tr>';
+            adminDataBody.innerHTML = '<tr><td colspan="4">رکوردی مطابق با فیلتر شما یافت نشد.</td></tr>';
             return;
         }
         records.forEach(record => {
             const row = document.createElement('tr');
-            const memberName = memberNames[record.memberId] || `(ID: ${record.memberId})`;
-            const instName = institutionNames[record.institutionId] || `(ID: ${record.institutionId})`;
+            const memberName = memberNames[record.memberId] || `(شناسه: ${record.memberId})`;
+            const instName = institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`;
             
             row.innerHTML = `
                 <td>${instName}</td>
@@ -72,28 +72,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- 3. Data Fetching ---
+    // --- ۳. دریافت داده‌ها از سرور ---
     async function initializeAdminPanel() {
-        loadingMessage.textContent = 'Loading stats and reports...';
+        loadingMessage.textContent = 'در حال بارگذاری آمار و گزارش‌ها...';
         try {
-            // Fetch dashboard stats, all attendance records, and all members in parallel
             const [dashboardResult, adminDataResult, ...memberResults] = await Promise.all([
                 fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getDashboardStats' }) }).then(res => res.json()),
                 fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData' }) }).then(res => res.json()),
-                // Assuming institutions 1 through 5 exist
                 ...[1, 2, 3, 4, 5].map(id => 
                     fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getMembers', payload: { institutionId: id } }) }).then(res => res.json())
                 )
             ]);
 
-            // Process dashboard data
             if (dashboardResult.status === 'success') {
                 renderDashboard(dashboardResult.data);
-            } else {
-                dashboardContainer.innerHTML = '<p>Error loading dashboard.</p>';
             }
 
-            // Process member names into a map for easy lookup
             memberResults.forEach(res => {
                 if (res.status === 'success') {
                     res.data.forEach(member => {
@@ -102,25 +96,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // Process and render the main attendance table
             if (adminDataResult.status === 'success') {
-                allRecords = adminDataResult.data.reverse(); // Show newest first
+                allRecords = adminDataResult.data.reverse();
                 renderTable(allRecords);
-            } else {
-                adminDataBody.innerHTML = '<tr><td colspan="4">Error loading reports.</td></tr>';
             }
             
             loadingMessage.style.display = 'none';
 
         } catch (error) {
-            console.error('Error initializing admin panel:', error);
-            loadingMessage.textContent = 'Error connecting to the server.';
+            console.error('خطا در بارگذاری پنل مدیر:', error);
+            loadingMessage.textContent = 'خطا در ارتباط با سرور.';
         }
     }
 
-    // --- 4. Filtering Logic ---
+    // --- ۴. منطق فیلترها ---
     function populateFilters() {
-        // This is now called within renderDashboard
+        // برای جلوگیری از اضافه شدن گزینه‌های تکراری در هر بار فراخوانی
+        institutionFilter.innerHTML = '<option value="all">همه موسسات</option>';
         Object.keys(institutionNames).forEach(id => {
             const option = document.createElement('option');
             option.value = id;
@@ -131,18 +123,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function applyFilters() {
         let filteredRecords = [...allRecords];
-
         const selectedInstitution = institutionFilter.value;
         if (selectedInstitution !== 'all') {
             filteredRecords = filteredRecords.filter(record => record.institutionId == selectedInstitution);
         }
-
         const selectedDate = dateFilter.value;
         if (selectedDate) {
             const persianDate = new Date(selectedDate).toLocaleDateString('fa-IR');
             filteredRecords = filteredRecords.filter(record => record.date === persianDate);
         }
-
         renderTable(filteredRecords);
     }
 
@@ -155,30 +144,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderTable(allRecords);
     });
 
-    // --- 5. Excel Export ---
+    // --- ۵. خروجی اکسل ---
     exportExcelButton.addEventListener('click', () => {
         const tableRows = adminDataBody.querySelectorAll('tr');
         if (tableRows.length === 0 || tableRows[0].querySelector('td[colspan="4"]')) {
-            alert("There is no data to export.");
+            alert("داده‌ای برای خروجی گرفتن وجود ندارد.");
             return;
         }
-
         const dataToExport = Array.from(tableRows).map(row => {
             const cells = row.querySelectorAll('td');
             return {
-                "Institution": cells[0].textContent,
-                "Member Name": cells[1].textContent,
-                "Date": cells[2].textContent,
-                "Status": cells[3].textContent,
+                "موسسه": cells[0].textContent,
+                "نام عضو": cells[1].textContent,
+                "تاریخ": cells[2].textContent,
+                "وضعیت": cells[3].textContent,
             };
         });
-
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Report");
+        XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب");
         XLSX.writeFile(workbook, "AttendanceReport.xlsx");
     });
 
-    // --- Initial Call ---
+    // --- اجرای اولیه ---
     initializeAdminPanel();
 });
