@@ -261,13 +261,15 @@ th {
     z-index: 0;
 }
 
+/* موقعیت لوگوی چپ */
 .background-logo-left {
-    left: 20%;
+    left: 15%; /* <<<< فاصله از چپ بیشتر شد */
     transform: translateY(-50%) rotateY(30deg) rotateZ(-15deg);
 }
 
+/* موقعیت لوگوی راست */
 .background-logo-right {
-    right: 20%;
+    right: 15%; /* <<<< فاصله از راست بیشتر شد */
     transform: translateY(-50%) rotateY(-30deg) rotateZ(15deg); 
 }
 
