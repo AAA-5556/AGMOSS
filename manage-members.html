@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت اعضا</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <h2 id="manage-page-title">مدیریت اعضای موسسه...</h2>
+            <a href="admin.html" class="back-link">بازگشت به داشبورد</a>
+        </header>
+
+        <div class="card">
+            <h3>افزودن اعضای جدید</h3>
+            <p class="guide-text">نام کامل هر عضو را در یک خط جداگانه وارد یا پیست کنید.</p>
+            <form id="add-members-form">
+                <textarea id="members-textarea" rows="5" placeholder="علی رضایی\nمریم احمدی\n..."></textarea>
+                <button type="submit">افزودن اعضا</button>
+            </form>
+            <p id="add-status-message" class="error-message"></p>
+        </div>
+
+        <div class="card">
+            <h3>لیست اعضای فعال</h3>
+            <table id="active-members-table">
+                <thead><tr><th>شناسه</th><th>نام کامل</th><th>عملیات</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>لیست اعضای حذف شده</h3>
+            <table id="inactive-members-table">
+                <thead><tr><th>شناسه</th><th>نام کامل</th><th>عملیات</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script src="manage-members.js"></script>
+</body>
+</html>
