@@ -223,7 +223,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (result.status === 'success') {
                     const profile = result.data;
                     memberProfileCard.innerHTML = `
-                        <p>تاریخ ثبت نام: <span class="highlight">${profile.creationDate || 'ثبت نشده'}</span></p>
+                        <p>تاریخ ثبت نام: <span class="highlight">${profile.creationDate}</span></p>
+                        <p>کد ملی: <span class="highlight">${profile.nationalId}</span></p>
+                        <p>شماره موبایل: <span class="highlight">${profile.mobile}</span></p>
+                        <hr>
                         <p>تعداد کل حضور: <span class="highlight present">${profile.totalPresents}</span></p>
                         <p>تعداد کل غیبت: <span class="highlight absent">${profile.totalAbsents}</span></p>
                         <p>آخرین حضور: <span class="highlight">${profile.lastPresent}</span></p>
