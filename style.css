@@ -357,3 +357,30 @@ th {
     text-decoration: underline;
     cursor: pointer;
 }
+/* =================================== */
+/* استایل لوگوی پس‌زمینه             */
+/* =================================== */
+
+.background-logo {
+    position: fixed; /* ثابت ماندن در صفحه */
+    top: 50%;
+    left: 25%; /* قرارگیری در سمت چپ */
+    transform: translate(-50%, -50%);
+    width: 400px; /* اندازه لوگو (قابل تغییر) */
+    height: auto;
+    opacity: 0.08; /* شفافیت برای حالت پس‌زمینه */
+    z-index: 0; /* قرارگیری پشت همه چیز */
+}
+
+/* برای اینکه پنل ورود روی لوگو قرار بگیرد */
+.login-container {
+    position: relative;
+    z-index: 1;
+}
+
+/* در صفحه‌های کوچک (موبایل) لوگو را مخفی می‌کنیم */
+@media (max-width: 900px) {
+    .background-logo {
+        display: none;
+    }
+}
