@@ -358,19 +358,42 @@ th {
     cursor: pointer;
 }
 /* =================================== */
-/* استایل لوگوی پس‌زمینه (نسخه نهایی) */
+/* استایل لوگوهای پس‌زمینه (نسخه دوتایی) */
 /* =================================== */
 
-.background-logo {
+/* استایل مشترک برای هر دو لوگو */
+.background-logo-left, .background-logo-right {
     position: fixed;
     top: 50%;
-    left: 25%;
-
-    /* تغییرات جدید در اینجا اعمال شده‌اند */
-    width: 750px;
-    opacity: 0.75;                                      /* وضوح بیشتر */
-    filter: drop-shadow(8px 8px 15px rgba(0,0,0,0.5));  /* حالت سه‌بعدی قوی‌تر */
-    transform: translate(-50%, -50%) rotateY(40deg) rotateZ(-50deg); /* کج کردن و عمق دادن */
-
+    transform: translateY(-50%); /* فقط برای مرکزیت عمودی */
+    width: 400px;
+    height: auto;
+    opacity: 0.1;
     z-index: 0;
+}
+
+/* موقعیت لوگوی چپ */
+.background-logo-left {
+    left: 20%;
+    transform: translateY(-50%) rotateY(30deg) rotateZ(-15deg);
+}
+
+/* موقعیت لوگوی راست */
+.background-logo-right {
+    right: 20%;
+    /* قرینه کردن زاویه برای تقارن */
+    transform: translateY(-50%) rotateY(-30deg) rotateZ(15deg); 
+}
+
+/* برای اینکه پنل ورود روی لوگوها قرار بگیرد */
+.login-container {
+    position: relative;
+    z-index: 1;
+}
+
+/* در صفحه‌های کوچک هر دو لوگو را مخفی می‌کنیم */
+@media (max-width: 1200px) {
+    .background-logo-left, .background-logo-right {
+        display: none;
+    }
 }
