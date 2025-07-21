@@ -20,7 +20,7 @@ body {
     width: 100%;
     max-width: 450px;
     box-sizing: border-box;
-    position: relative; /* برای قرارگیری روی لوگوی پس‌زمینه */
+    position: relative;
     z-index: 1;
 }
 
@@ -191,7 +191,7 @@ th {
 /* Dashboard & Stat Card Styles */
 .dashboard {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
     margin-bottom: 30px;
     padding-bottom: 30px;
@@ -203,6 +203,7 @@ th {
     border: 1px solid #dee2e6;
     border-radius: 8px;
     padding: 20px;
+    position: relative;
 }
 
 .stat-card h3 {
@@ -255,21 +256,19 @@ th {
     position: fixed;
     top: 50%;
     transform: translateY(-50%);
-    width: 750px;  /* <<<< تغییر جدید: اندازه بزرگ‌تر برای دسکتاپ */
+    width: 750px;
     height: auto;
-    opacity: 0.7;  /* <<<< تغییر جدید: شفافیت بیشتر */
+    opacity: 0.7;
     z-index: 0;
 }
 
-/* موقعیت لوگوی چپ */
 .background-logo-left {
-    left: 15%; /* <<<< فاصله از چپ بیشتر شد */
+    left: 15%;
     transform: translateY(-50%) rotateY(30deg) rotateZ(-15deg);
 }
 
-/* موقعیت لوگوی راست */
 .background-logo-right {
-    right: 15%; /* <<<< فاصله از راست بیشتر شد */
+    right: 15%;
     transform: translateY(-50%) rotateY(-30deg) rotateZ(15deg); 
 }
 
@@ -351,13 +350,101 @@ th {
     cursor: pointer;
 }
 
+/* Card Menu & Modal Styles */
+.card-menu-button {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    width: auto;
+    padding: 0 5px;
+    color: #6c757d;
+}
+.card-menu-button:hover {
+    color: #343a40;
+}
+
+.card-menu-dropdown {
+    display: none;
+    position: absolute;
+    top: 45px;
+    left: 15px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 10;
+    width: 170px;
+    overflow: hidden;
+}
+
+.card-menu-dropdown button {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    border-radius: 0;
+    text-align: right;
+    padding: 10px 15px;
+    color: #333;
+    font-weight: normal;
+}
+
+.card-menu-dropdown button:hover {
+    background-color: #f1f1f1;
+}
+
+.card-menu-dropdown button:disabled {
+    color: #aaa;
+    background-color: #f8f9fa;
+}
+
+.admin-edit-btn {
+    width: auto;
+    font-weight: normal;
+    padding: 8px 12px;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+#cancel-edit-button {
+    background-color: #6c757d;
+}
 
 /* =================================== */
 /* Responsive Styles for Mobile        */
 /* =================================== */
 
 @media (max-width: 1200px) {
-    /* در صفحات تبلت و کوچکتر، لوگوهای پس‌زمینه را مخفی می‌کنیم */
     .background-logo-left, .background-logo-right {
         display: none;
     }
@@ -365,17 +452,15 @@ th {
 
 @media (max-width: 900px) {
     body {
-        /* در موبایل، چیدمان را از وسط‌چین عمودی به حالت عادی تغییر می‌دهیم */
         display: block;
         padding: 10px;
     }
 
-    /* یک لوگوی جدید، کوچک و متمرکز برای صفحه ورود در موبایل */
     body.login-page::before {
         content: '';
         display: block;
-        width: 150px;   /* <<<< تغییر جدید: اندازه بزرگ‌تر برای موبایل */
-        height: 150px;  /* <<<< تغییر جدید: اندازه بزرگ‌تر برای موبایل */
+        width: 150px;
+        height: 150px;
         background-image: url('logo.png');
         background-size: contain;
         background-repeat: no-repeat;
