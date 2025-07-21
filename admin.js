@@ -98,7 +98,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         records.forEach(record => {
-            const recordDate = record.date.split('،')[0].trim();
+            // اصلاح شده: جدا کردن تاریخ از زمان با در نظر گرفتن هر دو نوع کاما
+            const recordDate = record.date.split(/,|،/)[0].trim();
+            
             if (recordDate !== lastDate && !currentFilters.memberId) {
                 const dateRow = document.createElement('tr');
                 dateRow.innerHTML = `<td colspan="4" class="date-group-header">تاریخ: ${recordDate}</td>`;
