@@ -14,17 +14,58 @@
             <button id="logout-button">خروج</button>
         </header>
 
-        <div id="dashboard-container" class="dashboard"></div>
-
-        <div class="controls secondary-filters">
+        <div id="dashboard-container" class="dashboard">
             </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <label for="institution-filter">فیلتر بر اساس موسسه:</label>
+                <select id="institution-filter">
+                    <option value="all">همه موسسات</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="date-filter">فیلتر بر اساس تاریخ:</label>
+                <input type="date" id="date-filter">
+            </div>
+        </div>
+        
+        <div class="controls secondary-filters">
+            <div class="form-group status-filter">
+                <label>فیلتر بر اساس وضعیت:</label>
+                <div>
+                    <button class="filter-btn active" data-status="all">همه</button>
+                    <button class="filter-btn" data-status="حاضر">فقط حاضرین</button>
+                    <button class="filter-btn" data-status="غایب">فقط غایبین</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <button id="reset-filters">حذف همه فیلترها</button>
+            </div>
+            <div class="form-group">
+                <button id="export-excel">دانلود اکسل</button>
+            </div>
+        </div>
+
         <p id="loading-message">در حال بارگذاری اطلاعات...</p>
+        
         <div id="member-profile-view" style="display: none;">
              <h3 id="member-profile-name"></h3>
              <div id="member-profile-card"></div>
         </div>
+
         <table>
-            </table>
+            <thead>
+                <tr>
+                    <th>موسسه</th>
+                    <th>نام عضو</th>
+                    <th>تاریخ و زمان</th>
+                    <th>وضعیت</th>
+                </tr>
+            </thead>
+            <tbody id="admin-data-body"></tbody>
+        </table>
+
         <div id="pagination-container" class="pagination"></div>
     </div>
 
