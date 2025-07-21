@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <button class="card-menu-button" data-inst-id="${stat.id}">⋮</button>
                 <div class="card-menu-dropdown" id="menu-${stat.id}">
                     <button data-action="edit-user" data-inst-id="${stat.id}" data-username="${stat.name}">ویرایش اطلاعات</button>
-                    <button data-action="manage-members" data-inst-id="${stat.id}" disabled>مدیریت اعضا</button>
+                    <button data-action="manage-members" data-inst-id="${stat.id}" data-username="${stat.name}">مدیریت اعضا</button>
                 </div>
                 <h3>${stat.name}</h3>
                 <p>تعداد کل اعضا: <span class="highlight">${stat.memberCount}</span></p>
@@ -251,17 +251,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- ۵. مدیریت منوها و پنجره ویرایش ---
     dashboardContainer.addEventListener('click', (e) => {
         const target = e.target;
+        const instId = target.dataset.instId;
+        const username = target.dataset.username;
+
         if (target.classList.contains('card-menu-button')) {
-            const instId = target.dataset.instId;
             const menu = document.getElementById(`menu-${instId}`);
             document.querySelectorAll('.card-menu-dropdown').forEach(m => {
                 if(m.id !== menu.id) m.style.display = 'none';
             });
             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         } else if (target.dataset.action === 'edit-user') {
-            const instId = target.dataset.instId;
-            const username = target.dataset.username;
             openEditModal(instId, username);
+        } else if (target.dataset.action === 'manage-members') {
+            window.location.href = `manage-members.html?id=${instId}&name=${username}`;
         }
     });
     
