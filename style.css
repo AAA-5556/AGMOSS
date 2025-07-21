@@ -490,3 +490,52 @@ th {
         align-items: stretch;
     }
 }
+/* =================================== */
+/* استایل صفحه مدیریت اعضا           */
+/* =================================== */
+
+.card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.guide-text {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: -10px;
+}
+
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-family: inherit;
+    margin-bottom: 15px;
+}
+
+.back-link {
+    text-decoration: none;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+    width: auto;
+    padding: 5px 10px;
+    font-size: 14px;
+    font-weight: normal;
+}
+
+.restore-btn {
+    background-color: #28a745;
+    width: auto;
+    padding: 5px 10px;
+    font-size: 14px;
+    font-weight: normal;
+}
