@@ -358,19 +358,19 @@ th {
     cursor: pointer;
 }
 /* =================================== */
-/* استایل لوگوی پس‌زمینه (نسخه جدید) */
+/* استایل لوگوی پس‌زمینه (نسخه نهایی) */
 /* =================================== */
 
 .background-logo {
     position: fixed;
     top: 50%;
     left: 25%;
-    transform: translate(-50%, -50%);
 
     /* تغییرات جدید در اینجا اعمال شده‌اند */
-    width: 550px;                       /* بزرگ‌تر کردن لوگو */
-    opacity: 0.15;                      /* واضح‌تر کردن لوگو */
-    filter: drop-shadow(5px 5px 8px rgba(0,0,0,0.2)); /* ایجاد حالت سایه و سه‌بعدی */
+    width: 550px;
+    opacity: 0.25;                                      /* وضوح بیشتر */
+    filter: drop-shadow(8px 8px 15px rgba(0,0,0,0.3));  /* حالت سه‌بعدی قوی‌تر */
+    transform: translate(-50%, -50%) rotateY(40deg) rotateZ(-10deg); /* کج کردن و عمق دادن */
 
     z-index: 0;
 }
