@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); }
             });
             if (adminDataResult.status === 'success') {
-                allRecords = adminDataResult.data.reverse(); // مرتب‌سازی از جدید به قدیم
+                allRecords = adminDataResult.data.reverse();
                 renderPage();
             }
             
