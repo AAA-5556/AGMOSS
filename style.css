@@ -368,7 +368,7 @@ th {
 
     /* تغییرات جدید در اینجا اعمال شده‌اند */
     width: 750px;
-    opacity: 0.15;                                      /* وضوح بیشتر */
+    opacity: 0.75;                                      /* وضوح بیشتر */
     filter: drop-shadow(8px 8px 15px rgba(0,0,0,0.5));  /* حالت سه‌بعدی قوی‌تر */
     transform: translate(-50%, -50%) rotateY(40deg) rotateZ(-50deg); /* کج کردن و عمق دادن */
 
