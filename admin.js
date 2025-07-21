@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function populateFilters() {
+        const currentSelection = institutionFilter.value;
         institutionFilter.innerHTML = '<option value="all">همه موسسات</option>';
         Object.keys(institutionNames).forEach(id => {
             const option = document.createElement('option');
@@ -91,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             option.textContent = institutionNames[id];
             institutionFilter.appendChild(option);
         });
+        institutionFilter.value = currentSelection;
     }
 
     function renderPage() {
@@ -266,7 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (target.dataset.action === 'edit-user') {
             openEditModal(instId, username);
         } else if (target.dataset.action === 'manage-members') {
-            window.location.href = `manage-members.html?id=${instId}&name=${username}`;
+            window.location.href = `manage-members.html?id=${instId}&name=${encodeURIComponent(username)}`;
         }
     });
     
@@ -338,7 +340,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         XLSX.writeFile(workbook, "AttendanceReport.xlsx");
     });
     
-    // --- ۷. بارگذاری اولیه ---
+    // --- ۷. بارگذاری اولیه و رفرش خودکار ---
+    async function refreshData() {
+        try {
+            const [dashboardResult, adminDataResult] = await Promise.all([
+                fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getDashboardStats' }) }).then(res => res.json()),
+                fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData' }) }).then(res => res.json())
+            ]);
+
+            if (dashboardResult.status === 'success') {
+                renderDashboard(dashboardResult.data);
+            }
+            if (adminDataResult.status === 'success') {
+                allRecords = adminDataResult.data.reverse();
+                renderPage();
+            }
+        } catch (error) {
+            console.error("خطا در رفرش خودکار:", error);
+        }
+    }
+
     async function initializeAdminPanel() {
         loadingMessage.textContent = 'در حال بارگذاری...';
         try {
@@ -362,6 +383,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             loadingMessage.style.display = 'none';
+
+            setInterval(refreshData, 30000);
+
         } catch (error) {
             console.error('خطا در بارگذاری پنل مدیر:', error);
             loadingMessage.textContent = 'خطا در ارتباط با سرور.';
