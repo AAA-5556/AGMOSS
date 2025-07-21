@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const memberProfileView = document.getElementById('member-profile-view');
     const memberProfileName = document.getElementById('member-profile-name');
     const memberProfileCard = document.getElementById('member-profile-card');
+    const editUserModal = document.getElementById('edit-user-modal');
+    const editUserForm = document.getElementById('edit-user-form');
+    const cancelEditButton = document.getElementById('cancel-edit-button');
+    const modalStatusMessage = document.getElementById('modal-status-message');
 
     // --- متغیرهای وضعیت ---
     let allRecords = []; 
@@ -50,6 +54,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const card = document.createElement('div');
             card.className = 'stat-card';
             card.innerHTML = `
+                <button class="card-menu-button" data-inst-id="${stat.id}">⋮</button>
+                <div class="card-menu-dropdown" id="menu-${stat.id}">
+                    <button data-action="edit-user" data-inst-id="${stat.id}" data-username="${stat.name}">ویرایش اطلاعات</button>
+                    <button data-action="manage-members" data-inst-id="${stat.id}" disabled>مدیریت اعضا</button>
+                </div>
                 <h3>${stat.name}</h3>
                 <p>تعداد کل اعضا: <span class="highlight">${stat.memberCount}</span></p>
                 <p>آخرین بروزرسانی: <span class="highlight">${stat.lastUpdate}</span></p>
@@ -62,6 +71,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             dashboardContainer.appendChild(card);
             institutionNames[stat.id] = stat.name;
         });
+        
+        const adminCard = document.createElement('div');
+        adminCard.className = 'stat-card';
+        adminCard.innerHTML = `
+             <h3>${userData.username} (مدیر)</h3>
+             <button data-action="edit-user" data-inst-id="0" data-username="${userData.username}" class="admin-edit-btn">ویرایش اطلاعات ورود من</button>
+        `;
+        dashboardContainer.appendChild(adminCard);
+
         populateFilters();
     }
     
@@ -98,9 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         records.forEach(record => {
-            // اصلاح شده: جدا کردن تاریخ از زمان با در نظر گرفتن هر دو نوع کاما
             const recordDate = record.date.split(/,|،/)[0].trim();
-            
             if (recordDate !== lastDate && !currentFilters.memberId) {
                 const dateRow = document.createElement('tr');
                 dateRow.innerHTML = `<td colspan="4" class="date-group-header">تاریخ: ${recordDate}</td>`;
@@ -232,7 +248,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderPage();
     });
 
-    // --- ۵. خروجی اکسل ---
+    // --- ۵. مدیریت منوها و پنجره ویرایش ---
+    dashboardContainer.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target.classList.contains('card-menu-button')) {
+            const instId = target.dataset.instId;
+            const menu = document.getElementById(`menu-${instId}`);
+            document.querySelectorAll('.card-menu-dropdown').forEach(m => {
+                if(m.id !== menu.id) m.style.display = 'none';
+            });
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        } else if (target.dataset.action === 'edit-user') {
+            const instId = target.dataset.instId;
+            const username = target.dataset.username;
+            openEditModal(instId, username);
+        }
+    });
+    
+    function openEditModal(id, currentUsername) {
+        document.querySelectorAll('.card-menu-dropdown').forEach(m => m.style.display = 'none');
+        modalStatusMessage.textContent = '';
+        editUserForm.reset();
+        document.getElementById('edit-user-id').value = id;
+        document.getElementById('modal-title').textContent = `ویرایش اطلاعات: ${currentUsername}`;
+        document.getElementById('edit-username').value = currentUsername;
+        editUserModal.style.display = 'flex';
+    }
+    
+    cancelEditButton.addEventListener('click', () => {
+        editUserModal.style.display = 'none';
+    });
+
+    editUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveButton = document.getElementById('save-user-button');
+        saveButton.disabled = true;
+        saveButton.textContent = 'در حال ذخیره...';
+
+        const payload = {
+            institutionId: document.getElementById('edit-user-id').value,
+            newUsername: document.getElementById('edit-username').value,
+            newPassword: document.getElementById('edit-password').value
+        };
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'updateUserCredentials', payload })
+            });
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                modalStatusMessage.style.color = 'green';
+                modalStatusMessage.textContent = 'با موفقیت ذخیره شد! صفحه تا ۲ ثانیه دیگر رفرش می‌شود...';
+                 setTimeout(() => { location.reload(); }, 2000);
+            } else {
+                 modalStatusMessage.style.color = '#d93025';
+                 modalStatusMessage.textContent = result.message;
+                 saveButton.disabled = false;
+                 saveButton.textContent = 'ذخیره تغییرات';
+            }
+        } catch (error) {
+            modalStatusMessage.textContent = 'خطا در ارتباط با سرور.';
+            saveButton.disabled = false;
+            saveButton.textContent = 'ذخیره تغییرات';
+        }
+    });
+
+    // --- ۶. خروجی اکسل ---
     exportExcelButton.addEventListener('click', () => {
         const dataToExport = applyAllFilters().map(record => ({
             "موسسه": institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`,
@@ -250,7 +333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         XLSX.writeFile(workbook, "AttendanceReport.xlsx");
     });
     
-    // --- ۶. بارگذاری اولیه ---
+    // --- ۷. بارگذاری اولیه ---
     async function initializeAdminPanel() {
         loadingMessage.textContent = 'در حال بارگذاری...';
         try {
