@@ -20,6 +20,8 @@ body {
     width: 100%;
     max-width: 450px;
     box-sizing: border-box;
+    position: relative; /* برای قرارگیری روی لوگوی پس‌زمینه */
+    z-index: 1;
 }
 
 .container {
@@ -248,39 +250,28 @@ th {
     flex-shrink: 0;
 }
 
-
-/* Responsive Styles for Mobile */
-@media (max-width: 600px) {
-    body {
-        padding: 10px;
-    }
-
-    .container, .login-container {
-        padding: 20px;
-    }
-
-    h1 {
-        font-size: 1.8em;
-    }
-
-    h2 {
-        font-size: 1.5em;
-    }
-    
-    .page-header {
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
+/* Background Logo Styles */
+.background-logo-left, .background-logo-right {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 400px;
+    height: auto;
+    opacity: 0.1;
+    z-index: 0;
 }
-/* =================================== */
-/* استایل فیلترهای پیشرفته و صفحه‌بندی */
-/* =================================== */
 
+.background-logo-left {
+    left: 20%;
+    transform: translateY(-50%) rotateY(30deg) rotateZ(-15deg);
+}
+
+.background-logo-right {
+    right: 20%;
+    transform: translateY(-50%) rotateY(-30deg) rotateZ(15deg); 
+}
+
+/* Advanced Filters & Pagination Styles */
 .secondary-filters {
     padding-top: 15px;
     border-top: 1px solid #eee;
@@ -357,43 +348,58 @@ th {
     text-decoration: underline;
     cursor: pointer;
 }
+
+
 /* =================================== */
-/* استایل لوگوهای پس‌زمینه (نسخه دوتایی) */
+/* Responsive Styles for Mobile        */
 /* =================================== */
 
-/* استایل مشترک برای هر دو لوگو */
-.background-logo-left, .background-logo-right {
-    position: fixed;
-    top: 50%;
-    transform: translateY(-50%); /* فقط برای مرکزیت عمودی */
-    width: 750px;
-    height: auto;
-    opacity: 0.7;
-    z-index: 0;
-}
-
-/* موقعیت لوگوی چپ */
-.background-logo-left {
-    left: 20%;
-    transform: translateY(-50%) rotateY(30deg) rotateZ(-15deg);
-}
-
-/* موقعیت لوگوی راست */
-.background-logo-right {
-    right: 20%;
-    /* قرینه کردن زاویه برای تقارن */
-    transform: translateY(-50%) rotateY(-30deg) rotateZ(15deg); 
-}
-
-/* برای اینکه پنل ورود روی لوگوها قرار بگیرد */
-.login-container {
-    position: relative;
-    z-index: 1;
-}
-
-/* در صفحه‌های کوچک هر دو لوگو را مخفی می‌کنیم */
 @media (max-width: 1200px) {
+    /* در صفحات تبلت و کوچکتر، لوگوهای پس‌زمینه را مخفی می‌کنیم */
     .background-logo-left, .background-logo-right {
         display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    body {
+        /* در موبایل، چیدمان را از وسط‌چین عمودی به حالت عادی تغییر می‌دهیم */
+        display: block;
+        padding: 10px;
+    }
+
+    /* یک لوگوی جدید، کوچک و متمرکز برای صفحه ورود در موبایل */
+    body.login-page::before {
+        content: '';
+        display: block;
+        width: 100px;
+        height: 100px;
+        background-image: url('logo.png'); /* مطمئن شوید نام فایل لوگو درست است */
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        margin: 20px auto;
+    }
+
+    .container, .login-container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    h2 {
+        font-size: 1.5em;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
