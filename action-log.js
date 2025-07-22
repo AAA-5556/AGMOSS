@@ -23,15 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- متغیرهای وضعیت ---
     let allLogs = [];
-    let currentFilters = { user: '', actionType: 'all', startDate: '', endDate: '' };
+    let currentFilters = { user: '', actionType: 'all', startDate: null, endDate: null };
     let currentPage = 1;
     const ITEMS_PER_PAGE = 30;
     
     // --- فعال‌سازی تقویم شمسی ---
-    $(".persian-date-picker").pDatepicker({
+    $("#start-date-filter, #end-date-filter").pDatepicker({
         format: 'YYYY/MM/DD',
         autoClose: true,
-        initialValue: false,
+        altField: function() { return '#' + $(this).attr('id').replace('-filter', '-unix'); },
+        altFormat: 'X',
         onSelect: function() { this.el.dispatchEvent(new Event('change')); }
     });
 
@@ -64,22 +65,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- منطق فیلترها ---
     function applyFilters() {
         let filtered = [...allLogs];
+        
         if (currentFilters.user) {
             filtered = filtered.filter(log => log.actor.toLowerCase().includes(currentFilters.user.toLowerCase()));
         }
         if (currentFilters.actionType !== 'all') {
             filtered = filtered.filter(log => log.type === currentFilters.actionType);
         }
-        if (currentFilters.startDate) {
+
+        const startDateUnix = document.getElementById('start-date-unix').value;
+        if (startDateUnix) {
+            const start = parseInt(startDateUnix) * 1000;
             filtered = filtered.filter(log => {
-                const logDatePart = log.timestamp.split(/,|،/)[0].trim();
-                return logDatePart >= currentFilters.startDate;
+                try {
+                    const logDate = new persianDate(log.timestamp.split(/,|،/)[0].trim().split('/').map(Number)).toDate().getTime();
+                    return logDate >= start;
+                } catch(e) { return false; }
             });
         }
-        if (currentFilters.endDate) {
+
+        const endDateUnix = document.getElementById('end-date-unix').value;
+        if (endDateUnix) {
+            const end = (parseInt(endDateUnix) * 1000) + (24 * 60 * 60 * 1000) - 1;
             filtered = filtered.filter(log => {
-                const logDatePart = log.timestamp.split(/,|،/)[0].trim();
-                return logDatePart <= currentFilters.endDate;
+                try {
+                    const logDate = new persianDate(log.timestamp.split(/,|،/)[0].trim().split('/').map(Number)).toDate().getTime();
+                    return logDate <= end;
+                } catch(e) { return false; }
             });
         }
         return filtered;
@@ -92,15 +104,13 @@ document.addEventListener('DOMContentLoaded', () => {
             filter.addEventListener('change', () => {
                 currentFilters.user = userFilter.value;
                 currentFilters.actionType = actionTypeFilter.value;
-                currentFilters.startDate = startDateFilter.value;
-                currentFilters.endDate = endDateFilter.value;
                 currentPage = 1;
                 renderPage();
             });
         });
         
         resetFiltersButton.addEventListener('click', () => {
-            userFilter.value = ''; actionTypeFilter.value = 'all';
+            userFilter.value = ''; actionTypeFilter.value = 'all'; 
             $(startDateFilter).pDatepicker("clear");
             $(endDateFilter).pDatepicker("clear");
             const changeEvent = new Event('change');
