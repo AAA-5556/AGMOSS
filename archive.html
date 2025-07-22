@@ -13,7 +13,6 @@
                 <h2>موسسات آرشیو شده</h2>
                 <a href="admin.html" class="back-link">بازگشت به داشبورد</a>
             </header>
-
             <p id="loading-archive">در حال بارگذاری لیست بایگانی...</p>
             <table>
                 <thead>
@@ -24,8 +23,7 @@
                         <th>عملیات</th>
                     </tr>
                 </thead>
-                <tbody id="archive-table-body">
-                    </tbody>
+                <tbody id="archive-table-body"></tbody>
             </table>
         </div>
 
@@ -35,8 +33,7 @@
                 <button id="back-to-list-btn" class="back-link" style="border-width: 2px;">بازگشت به لیست</button>
             </header>
 
-            <div id="profile-summary-card" class="card">
-                </div>
+            <div id="profile-summary-card" class="card"></div>
 
             <div class="tab-buttons">
                 <button class="tab-button active" data-tab="members">لیست اعضا</button>
@@ -45,6 +42,7 @@
             
             <div id="members-tab" class="tab-content active">
                 <h3>لیست اعضای موسسه</h3>
+                <div id="member-profile-card-archive" class="card" style="display: none; background-color: #e9ecef;"></div>
                 <table>
                     <thead><tr><th>شناسه</th><th>نام کامل</th><th>وضعیت</th></tr></thead>
                     <tbody id="profile-members-body"></tbody>
