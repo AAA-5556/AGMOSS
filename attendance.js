@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ❗ مهم: لینک API خود را اینجا قرار دهید
     const API_URL = "https://script.google.com/macros/s/AKfycbyFhhTg_2xf6TqTBdybO883H4f6562sTDUSY8dbQJyN2K-nmFVD7ViTgWllEPwOaf7V/exec";
 
+    // --- ۱. کد نگهبان و بررسی هویت ---
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (!userData || !userData.token || userData.role !== 'institute') {
+        localStorage.removeItem('userData');
+        window.location.href = 'index.html';
+        return; // اجرای اسکریپت را متوقف کن
+    }
+
     // --- شناسایی عناصر عمومی ---
     const instituteNameEl = document.getElementById('institute-name');
     const logoutButton = document.getElementById('logout-button');
@@ -10,24 +18,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const instMenuDropdown = document.getElementById('inst-menu-dropdown');
 
     // --- متغیرهای عمومی ---
-    const userData = JSON.parse(sessionStorage.getItem('userData'));
     let membersMap = {}; 
     let historyInitialized = false;
 
-    // --- بررسی اولیه ورود کاربر ---
-    if (!userData || userData.role !== 'institute') {
-        window.location.href = 'index.html';
-        return;
-    }
-
-    // --- تابع کمکی برای تماس با API ---
+    // --- تابع کمکی برای تماس با API (با ارسال توکن) ---
     async function apiCall(action, payload) {
         try {
+            const token = JSON.parse(localStorage.getItem('userData')).token;
+            if (!token) {
+                localStorage.removeItem('userData');
+                window.location.href = 'index.html';
+                return;
+            }
+            
             const response = await fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action, payload })
+                body: JSON.stringify({ action, payload, token })
             });
-            return await response.json();
+            const result = await response.json();
+            
+            if (result.status === 'error' && (result.message.includes('منقضی') || result.message.includes('نامعتبر'))) {
+                alert(result.message);
+                localStorage.removeItem('userData');
+                window.location.href = 'index.html';
+            }
+            return result;
         } catch (error) {
             console.error('API Call Error:', error);
             return { status: 'error', message: 'خطا در ارتباط با سرور.' };
@@ -35,12 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =================================================================
-    // بخش ۱: راه‌اندازی اولیه صفحه
+    // بخش ۲: راه‌اندازی اولیه صفحه
     // =================================================================
     function initializePage() {
         instituteNameEl.textContent = `پنل موسسه (${userData.username})`;
         logoutButton.addEventListener('click', () => {
-            sessionStorage.removeItem('userData');
+            localStorage.removeItem('userData');
             window.location.href = 'index.html';
         });
 
@@ -56,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (result.status === 'success') {
             const settings = result.data;
             let canDoSomething = false;
-
             if (settings.allowMemberManagement === true) {
                 const manageMembersLink = document.getElementById('manage-members-link');
                 manageMembersLink.style.display = 'block';
@@ -70,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('change-password').disabled = !settings.allowPasswordChange;
                 canDoSomething = true;
             }
-            
             if(canDoSomething) {
                 instMenuContainer.style.display = 'block';
             }
@@ -78,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =================================================================
-    // بخش ۲: مدیریت تب‌ها، مودال‌ها و منوها
+    // بخش ۳: مدیریت تب‌ها، مودال‌ها و منوها
     // =================================================================
     function setupTabs() {
         document.querySelectorAll('.tab-button').forEach(button => {
@@ -118,11 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const newPassword = document.getElementById('change-password').value.trim();
             const statusEl = document.getElementById('change-creds-status');
             if (!newUsername && !newPassword) return;
-            const result = await apiCall('changeMyCredentials', { institutionId: userData.institutionId, newUsername, newPassword });
+            const result = await apiCall('changeMyCredentials', { newUsername, newPassword });
             if (result.status === 'success') {
                 statusEl.style.color = 'green';
                 statusEl.textContent = 'اطلاعات با موفقیت تغییر کرد. لطفاً دوباره وارد شوید.';
-                setTimeout(() => { sessionStorage.removeItem('userData'); window.location.href = 'index.html'; }, 3000);
+                setTimeout(() => { localStorage.removeItem('userData'); window.location.href = 'index.html'; }, 3000);
             } else {
                 statusEl.style.color = 'red';
                 statusEl.textContent = result.message;
@@ -143,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =================================================================
-    // بخش ۳: منطق تب ثبت حضور و غیاب
+    // بخش ۴: منطق تب ثبت حضور و غیاب
     // =================================================================
     async function initializeRegisterTab() { 
         const currentDateEl = document.getElementById('current-date');
@@ -153,8 +166,8 @@ document.addEventListener('DOMContentLoaded', () => {
         memberListBody.innerHTML = '<tr><td colspan="2">در حال بارگذاری...</td></tr>'; 
         
         const [membersResult, todaysAttendanceResult] = await Promise.all([ 
-            apiCall('getMembers', { institutionId: userData.institutionId }), 
-            apiCall('getTodaysAttendance', { institutionId: userData.institutionId }) 
+            apiCall('getMembers', {}), 
+            apiCall('getTodaysAttendance', {}) 
         ]); 
         
         if (membersResult.status !== 'success') { memberListBody.innerHTML = '<tr><td colspan="2">خطا در دریافت لیست اعضا.</td></tr>'; return; } 
@@ -195,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveButton.disabled = false; saveButton.textContent = 'ثبت نهایی'; 
             return; 
         } 
-        const result = await apiCall('saveAttendance', { institutionId: userData.institutionId, data: attendanceData });
+        const result = await apiCall('saveAttendance', { data: attendanceData });
         if (result.status === 'success') { 
             statusMessage.style.color = 'green'; 
             statusMessage.textContent = 'حضور و غیاب با موفقیت به‌روزرسانی شد!'; 
@@ -208,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // =================================================================
-    // بخش ۴: منطق تب تاریخچه
+    // بخش ۵: منطق تب تاریخچه
     // =================================================================
     function initializeHistoryTab() {
         let fullHistory = [];
@@ -254,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function fetchHistory() {
             historyTableBody.innerHTML = '<tr><td colspan="3">در حال بارگذاری تاریخچه...</td></tr>';
-            const result = await apiCall('getInstitutionHistory', { institutionId: userData.institutionId });
+            const result = await apiCall('getInstitutionHistory', {});
             if (result.status === 'success') {
                 fullHistory = result.data;
                 renderHistoryPage();
