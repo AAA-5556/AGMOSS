@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ❗ مهم: لینک API خود را اینجا قرار دهید
     const API_URL = "https://script.google.com/macros/s/AKfycbyFhhTg_2xf6TqTBdybO883H4f6562sTDUSY8dbQJyN2K-nmFVD7ViTgWllEPwOaf7V/exec";
 
+    // --- ۱. کد نگهبان و بررسی هویت ---
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (!userData || !userData.token || userData.role !== 'admin') {
+        localStorage.removeItem('userData');
+        window.location.href = 'index.html';
+        return;
+    }
+
     // --- شناسایی عناصر ---
     const allowMemberManagementCheck = document.getElementById('allowMemberManagement');
     const allowUsernameChangeCheck = document.getElementById('allowUsernameChange');
@@ -9,14 +17,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const saveButton = document.getElementById('save-settings-btn');
     const statusMessage = document.getElementById('settings-status');
 
-    // --- تابع کمکی برای تماس با API ---
+    // --- تابع کمکی برای تماس با API (با ارسال توکن) ---
     async function apiCall(action, payload) {
         try {
+            const token = JSON.parse(localStorage.getItem('userData')).token;
             const response = await fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action, payload })
+                body: JSON.stringify({ action, payload, token })
             });
-            return await response.json();
+            const result = await response.json();
+            if (result.status === 'error' && (result.message.includes('منقضی') || result.message.includes('نامعتبر'))) {
+                alert(result.message);
+                localStorage.removeItem('userData');
+                window.location.href = 'index.html';
+            }
+            return result;
         } catch (error) {
             console.error('API Call Error:', error);
             return { status: 'error', message: 'خطا در ارتباط با سرور.' };
