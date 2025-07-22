@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'index.html';
     });
 
-    // --- تابع کمکی برای تماس با API ---
+    // --- تابع کمکی برای تماس با API (بخش اصلاح شده) ---
     async function apiCall(action, payload) {
         try {
             const response = await fetch(API_URL, {
@@ -146,6 +146,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             fullHistory = result.data;
             currentHistoryPage = 1;
             renderHistoryPage();
+        } else {
+             historyTableBody.innerHTML = `<tr><td colspan="3">خطا در بارگذاری تاریخچه.</td></tr>`;
         }
     }
     
@@ -178,7 +180,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             apiCall('getMembers', { institutionId: userData.institutionId }), 
             apiCall('getTodaysAttendance', { institutionId: userData.institutionId }) 
         ]); 
-        if (membersResult.status !== 'success') { throw new Error('خطا در دریافت لیست اعضا.'); } 
+        if (membersResult.status !== 'success') {
+            registerTabElements.memberListBody.innerHTML = '<tr><td colspan="2">خطا در دریافت لیست اعضا.</td></tr>';
+            return;
+        } 
         const members = membersResult.data; 
         members.forEach(m => membersMap[m.memberId] = m.fullName); 
         let todaysAttendance = {}; 
