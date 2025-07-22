@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div class="container">
         <header class="page-header">
             <div class="header-title-menu">
@@ -17,6 +16,9 @@
                     <div id="main-menu-dropdown" class="card-menu-dropdown">
                         <a href="archive.html">بایگانی موسسات</a>
                         <a href="settings.html">تنظیمات</a>
+                        <hr style="margin: 5px 0;">
+                        <a href="login-log.html">تاریخچه ورودها</a>
+                        <a href="action-log.html">تاریخچه تغییرات</a>
                     </div>
                 </div>
             </div>
@@ -24,6 +26,22 @@
                 <button id="logout-button">خروج</button>
             </div>
         </header>
+
+        <div class="card">
+            <h3>افزودن موسسه جدید</h3>
+            <form id="add-institution-form" class="add-inst-form">
+                <div class="form-group">
+                    <label for="new-inst-username">نام کاربری جدید</label>
+                    <input type="text" id="new-inst-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-inst-password">رمز عبور جدید</label>
+                    <input type="text" id="new-inst-password" required>
+                </div>
+                <button type="submit">ایجاد موسسه</button>
+            </form>
+            <p id="add-inst-status" class="error-message"></p>
+        </div>
 
         <div id="dashboard-container" class="dashboard">
             </div>
