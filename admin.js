@@ -26,9 +26,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.cancel-btn').forEach(btn => { btn.addEventListener('click', () => { editUserModal.style.display = 'none'; addInstitutionModal.style.display = 'none'; }); });
 
     // --- متغیرهای وضعیت ---
-    let allRecords = []; let memberNames = {}; let institutionNames = {};
+    let allRecords = []; 
+    let memberNames = {}; 
+    let institutionNames = {};
     let currentFilters = { institution: 'all', date: '', status: 'all', memberId: null };
-    let currentPage = 1; const ITEMS_PER_PAGE = 30;
+    let currentPage = 1; 
+    const ITEMS_PER_PAGE = 30;
 
     // --- ۱. بررسی هویت و خروج ---
     const userData = JSON.parse(sessionStorage.getItem('userData'));
@@ -60,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dashboardContainer.appendChild(addCard);
         populateFilters();
     }
+    
     function populateFilters() { const currentSelection = institutionFilter.value; institutionFilter.innerHTML = '<option value="all">همه موسسات</option>'; Object.keys(institutionNames).forEach(id => { const option = document.createElement('option'); option.value = id; option.textContent = institutionNames[id]; institutionFilter.appendChild(option); }); institutionFilter.value = currentSelection; }
     function renderPage() { memberProfileView.style.display = currentFilters.memberId ? 'block' : 'none'; const filteredRecords = applyAllFilters(); const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE); currentPage = Math.min(currentPage, totalPages || 1); const startIndex = (currentPage - 1) * ITEMS_PER_PAGE; const pageRecords = filteredRecords.slice(startIndex, startIndex + ITEMS_PER_PAGE); renderTable(pageRecords); renderPagination(totalPages); }
     function renderTable(records) { adminDataBody.innerHTML = ''; let lastDate = null; if (records.length === 0) { adminDataBody.innerHTML = '<tr><td colspan="4">رکوردی یافت نشد.</td></tr>'; return; } records.forEach(record => { const recordDate = record.date.split(/,|،/)[0].trim(); if (recordDate !== lastDate && !currentFilters.memberId) { const dateRow = document.createElement('tr'); dateRow.innerHTML = `<td colspan="4" class="date-group-header">تاریخ: ${recordDate}</td>`; adminDataBody.appendChild(dateRow); lastDate = recordDate; } const row = document.createElement('tr'); const memberName = memberNames[record.memberId] || `(شناسه: ${record.memberId})`; const instName = institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`; row.innerHTML = `<td>${instName}</td><td><a href="#" class="clickable-member" data-member-id="${record.memberId}">${memberName}</a></td><td>${record.date}</td><td>${record.status}</td>`; adminDataBody.appendChild(row); }); }
@@ -78,11 +82,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     addInstitutionForm.addEventListener('submit', async (e) => { e.preventDefault(); const username = document.getElementById('new-inst-username').value.trim(); const password = document.getElementById('new-inst-password').value.trim(); if (!username || !password) return; const payload = { username, password, createdBy: userData.username }; addInstStatus.textContent = 'در حال ایجاد...'; const result = await apiCall('addInstitution', payload); if (result.status === 'success') { addInstStatus.style.color = 'green'; addInstStatus.textContent = result.data.message + ' صفحه در حال بارگذاری مجدد است...'; setTimeout(() => location.reload(), 2500); } else { addInstStatus.style.color = 'red'; addInstStatus.textContent = result.message; } });
 
-    // --- Event Listener اصلاح شده و نهایی برای کارت‌ها ---
+    // --- Event Listener نهایی و اصلاح شده برای کارت‌ها ---
     dashboardContainer.addEventListener('click', async (e) => {
         const menuButton = e.target.closest('.card-menu-button');
-        const actionButton = e.target.closest('[data-action]');
-
         if (menuButton) {
             const instId = menuButton.dataset.instId;
             const menu = document.getElementById(`menu-${instId}`);
@@ -93,11 +95,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        const actionButton = e.target.closest('[data-action]');
         if (actionButton) {
             const action = actionButton.dataset.action;
             const instId = actionButton.dataset.instId;
             const username = actionButton.dataset.username;
-            
+
             document.querySelectorAll('.card-menu-dropdown').forEach(m => m.style.display = 'none');
             
             if (action === 'edit-user') {
@@ -114,16 +117,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     
-    function openEditModal(id, currentUsername) { modalStatusMessage.textContent = ''; editUserForm.reset(); document.getElementById('edit-user-id').value = id; document.getElementById('modal-title').textContent = `ویرایش اطلاعات: ${currentUsername}`; document.getElementById('edit-username').value = currentUsername; editUserModal.style.display = 'flex'; }
+    function openEditModal(id, currentUsername) { const modalStatusMessage = document.getElementById('modal-status-message'); modalStatusMessage.textContent = ''; editUserForm.reset(); document.getElementById('edit-user-id').value = id; document.getElementById('modal-title').textContent = `ویرایش اطلاعات: ${currentUsername}`; document.getElementById('edit-username').value = currentUsername; editUserModal.style.display = 'flex'; }
     
-    editUserForm.addEventListener('submit', async (e) => { e.preventDefault(); const saveButton = document.getElementById('save-user-button'); saveButton.disabled = true; saveButton.textContent = 'در حال ذخیره...'; const payload = { institutionId: document.getElementById('edit-user-id').value, newUsername: document.getElementById('edit-username').value, newPassword: document.getElementById('edit-password').value }; const result = await apiCall('updateUserCredentials', payload); if (result.status === 'success') { modalStatusMessage.style.color = 'green'; modalStatusMessage.textContent = 'با موفقیت ذخیره شد! صفحه تا ۲ ثانیه دیگر رفرش می‌شود...'; setTimeout(() => { location.reload(); }, 2000); } else { modalStatusMessage.style.color = '#d93025'; modalStatusMessage.textContent = result.message; saveButton.disabled = false; saveButton.textContent = 'ذخیره تغییرات'; } });
+    editUserForm.addEventListener('submit', async (e) => { e.preventDefault(); const saveButton = document.getElementById('save-user-button'); saveButton.disabled = true; saveButton.textContent = 'در حال ذخیره...'; const payload = { institutionId: document.getElementById('edit-user-id').value, newUsername: document.getElementById('edit-username').value, newPassword: document.getElementById('edit-password').value }; const result = await apiCall('updateUserCredentials', payload); if (result.status === 'success') { const modalStatusMessage = document.getElementById('modal-status-message'); modalStatusMessage.style.color = 'green'; modalStatusMessage.textContent = 'با موفقیت ذخیره شد! صفحه تا ۲ ثانیه دیگر رفرش می‌شود...'; setTimeout(() => { location.reload(); }, 2000); } else { const modalStatusMessage = document.getElementById('modal-status-message'); modalStatusMessage.style.color = '#d93025'; modalStatusMessage.textContent = result.message; saveButton.disabled = false; saveButton.textContent = 'ذخیره تغییرات'; } });
 
     // --- ۶. خروجی اکسل ---
     exportExcelButton.addEventListener('click', () => { const dataToExport = applyAllFilters().map(record => ({ "موسسه": institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`, "نام عضو": memberNames[record.memberId] || `(شناسه: ${record.memberId})`, "تاریخ و زمان": record.date, "وضعیت": record.status, })); if (dataToExport.length === 0) { alert("داده‌ای برای خروجی گرفتن وجود ندارد."); return; } const worksheet = XLSX.utils.json_to_sheet(dataToExport); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب"); XLSX.writeFile(workbook, "AttendanceReport.xlsx"); });
     
     // --- ۷. بارگذاری اولیه و رفرش خودکار ---
     async function refreshData() { try { const [dashboardResult, adminDataResult] = await Promise.all([ apiCall('getDashboardStats', {}), apiCall('getAdminData', {}) ]); if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); } if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); } } catch (error) { console.error("خطا در رفرش خودکار:", error); } }
-    async function initializeAdminPanel() { loadingMessage.textContent = 'در حال بارگذاری...'; try { const [dashboardResult, adminDataResult, ...memberResults] = await Promise.all([ apiCall('getDashboardStats', {}), apiCall('getAdminData', {}), ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(id => apiCall('getMembers', { institutionId: id })) ]); if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); } memberResults.forEach(res => { if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); } }); if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); } loadingMessage.style.display = 'none'; setInterval(refreshData, 30000); } catch (error) { console.error('خطا در بارگذاری پنل مدیر:', error); loadingMessage.textContent = 'خطا در ارتباط با سرور.'; } }
+    async function initializeAdminPanel() { loadingMessage.textContent = 'در حال بارگذاری...'; try { const [dashboardResult, adminDataResult, ...memberResults] = await Promise.all([ apiCall('getDashboardStats', {}), apiCall('getAdminData', {}), ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(id => apiCall('getMembers', { institutionId: id })) ]); if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); } memberResults.forEach(res => { if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); } }); if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); } loadingMessage.style.display = 'none'; setInterval(refreshData, 30000); } catch (error) { console.error('خطا در بارگذاری پنل مدیر:', error); loadingMessage.textContent = 'خطا در ارتباط با سرور.'; } }
     
     initializeAdminPanel();
 });
