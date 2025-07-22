@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editUserForm = document.getElementById('edit-user-form');
     const cancelEditButton = document.getElementById('cancel-edit-button');
     const modalStatusMessage = document.getElementById('modal-status-message');
+    const addInstitutionForm = document.getElementById('add-institution-form');
+    const addInstStatus = document.getElementById('add-inst-status');
+    const mainMenuButton = document.getElementById('main-menu-button');
+    const mainMenuDropdown = document.getElementById('main-menu-dropdown');
 
     // --- متغیرهای وضعیت ---
     let allRecords = []; 
@@ -41,11 +45,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     document.querySelector('.page-header h2').textContent = `پنل مدیریت (${userData.username})`;
-
     logoutButton.addEventListener('click', () => {
         sessionStorage.removeItem('userData');
         window.location.href = 'index.html';
     });
+    
+    // --- تابع کمکی برای تماس با API ---
+    async function apiCall(action, payload) {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action, payload })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('API Call Error:', error);
+            return { status: 'error', message: 'خطا در ارتباط با سرور.' };
+        }
+    }
 
     // --- ۲. توابع نمایش ---
     function renderDashboard(stats) {
@@ -58,6 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="card-menu-dropdown" id="menu-${stat.id}">
                     <button data-action="edit-user" data-inst-id="${stat.id}" data-username="${stat.name}">ویرایش اطلاعات</button>
                     <button data-action="manage-members" data-inst-id="${stat.id}" data-username="${stat.name}">مدیریت اعضا</button>
+                    <button data-action="archive-inst" data-inst-id="${stat.id}" data-username="${stat.name}">آرشیو موسسه</button>
                 </div>
                 <h3>${stat.name}</h3>
                 <p>تعداد کل اعضا: <span class="highlight">${stat.memberCount}</span></p>
@@ -79,7 +97,6 @@ document.addEventListener('DOMContentLoaded', async () => {
              <button data-action="edit-user" data-inst-id="0" data-username="${userData.username}" class="admin-edit-btn">ویرایش اطلاعات ورود من</button>
         `;
         dashboardContainer.appendChild(adminCard);
-
         populateFilters();
     }
     
@@ -98,13 +115,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderPage() {
         memberProfileView.style.display = currentFilters.memberId ? 'block' : 'none';
         const filteredRecords = applyAllFilters();
-        
         const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
         currentPage = Math.min(currentPage, totalPages || 1);
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        const pageRecords = filteredRecords.slice(startIndex, endIndex);
-
+        const pageRecords = filteredRecords.slice(startIndex, startIndex + ITEMS_PER_PAGE);
         renderTable(pageRecords);
         renderPagination(totalPages);
     }
@@ -116,7 +130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             adminDataBody.innerHTML = '<tr><td colspan="4">رکوردی یافت نشد.</td></tr>';
             return;
         }
-
         records.forEach(record => {
             const recordDate = record.date.split(/,|،/)[0].trim();
             if (recordDate !== lastDate && !currentFilters.memberId) {
@@ -125,16 +138,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 adminDataBody.appendChild(dateRow);
                 lastDate = recordDate;
             }
-
             const row = document.createElement('tr');
             const memberName = memberNames[record.memberId] || `(شناسه: ${record.memberId})`;
             const instName = institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`;
-            row.innerHTML = `
-                <td>${instName}</td>
-                <td><a href="#" class="clickable-member" data-member-id="${record.memberId}">${memberName}</a></td>
-                <td>${record.date}</td>
-                <td>${record.status}</td>
-            `;
+            row.innerHTML = `<td>${instName}</td><td><a href="#" class="clickable-member" data-member-id="${record.memberId}">${memberName}</a></td><td>${record.date}</td><td>${record.status}</td>`;
             adminDataBody.appendChild(row);
         });
     }
@@ -142,19 +149,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderPagination(totalPages) {
         paginationContainer.innerHTML = '';
         if (totalPages <= 1) return;
-
         const createButton = (text, page, isDisabled = false, isActive = false) => {
             const button = document.createElement('button');
             button.textContent = text;
             button.disabled = isDisabled;
             if (isActive) button.classList.add('active');
-            button.addEventListener('click', () => {
-                currentPage = page;
-                renderPage();
-            });
+            button.addEventListener('click', () => { currentPage = page; renderPage(); });
             return button;
         };
-
         paginationContainer.appendChild(createButton('قبلی', currentPage - 1, currentPage === 1));
         for (let i = 1; i <= totalPages; i++) {
             paginationContainer.appendChild(createButton(i, i, false, i === currentPage));
@@ -165,46 +167,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- ۳. منطق فیلترها ---
     function applyAllFilters() {
         let filtered = [...allRecords];
-        if (currentFilters.institution !== 'all') {
-            filtered = filtered.filter(r => r.institutionId == currentFilters.institution);
-        }
-        if (currentFilters.date) {
-            const persianDate = new Date(currentFilters.date).toLocaleDateString('fa-IR');
-            filtered = filtered.filter(r => r.date.startsWith(persianDate));
-        }
-        if (currentFilters.status !== 'all') {
-            filtered = filtered.filter(r => r.status === currentFilters.status);
-        }
-        if (currentFilters.memberId) {
-            filtered = filtered.filter(r => r.memberId == currentFilters.memberId);
-        }
+        if (currentFilters.institution !== 'all') { filtered = filtered.filter(r => r.institutionId == currentFilters.institution); }
+        if (currentFilters.date) { const persianDate = new Date(currentFilters.date).toLocaleDateString('fa-IR'); filtered = filtered.filter(r => r.date.startsWith(persianDate)); }
+        if (currentFilters.status !== 'all') { filtered = filtered.filter(r => r.status === currentFilters.status); }
+        if (currentFilters.memberId) { filtered = filtered.filter(r => r.memberId == currentFilters.memberId); }
         return filtered;
     }
 
     // --- ۴. تنظیم Event Listeners ---
-    institutionFilter.addEventListener('change', (e) => {
-        currentFilters.institution = e.target.value;
-        currentFilters.memberId = null; 
-        currentPage = 1;
-        renderPage();
-    });
-
-    dateFilter.addEventListener('change', (e) => {
-        currentFilters.date = e.target.value;
-        currentPage = 1;
-        renderPage();
-    });
-
-    statusFilterButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            statusFilterButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFilters.status = btn.dataset.status;
-            currentPage = 1;
-            renderPage();
-        });
-    });
-
+    institutionFilter.addEventListener('change', (e) => { currentFilters.institution = e.target.value; currentFilters.memberId = null; currentPage = 1; renderPage(); });
+    dateFilter.addEventListener('change', (e) => { currentFilters.date = e.target.value; currentPage = 1; renderPage(); });
+    statusFilterButtons.forEach(btn => { btn.addEventListener('click', () => { statusFilterButtons.forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentFilters.status = btn.dataset.status; currentPage = 1; renderPage(); }); });
+    resetFiltersButton.addEventListener('click', () => { institutionFilter.value = 'all'; dateFilter.value = ''; statusFilterButtons.forEach(b => b.classList.remove('active')); document.querySelector('.filter-btn[data-status="all"]').classList.add('active'); currentFilters = { institution: 'all', date: '', status: 'all', memberId: null }; currentPage = 1; renderPage(); });
+    
     adminDataBody.addEventListener('click', async (e) => {
         if (e.target.classList.contains('clickable-member')) {
             e.preventDefault();
@@ -215,46 +190,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             memberProfileView.style.display = 'block';
             currentPage = 1;
             renderPage();
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'getMemberProfile', payload: { memberId: memberId } })
-                });
-                const result = await response.json();
-                if (result.status === 'success') {
-                    const profile = result.data;
-                    memberProfileCard.innerHTML = `
-                        <p>تاریخ ثبت نام: <span class="highlight">${profile.creationDate}</span></p>
-                        <p>کد ملی: <span class="highlight">${profile.nationalId}</span></p>
-                        <p>شماره موبایل: <span class="highlight">${profile.mobile}</span></p>
-                        <hr>
-                        <p>تعداد کل حضور: <span class="highlight present">${profile.totalPresents}</span></p>
-                        <p>تعداد کل غیبت: <span class="highlight absent">${profile.totalAbsents}</span></p>
-                        <p>آخرین حضور: <span class="highlight">${profile.lastPresent}</span></p>
-                        <p>آخرین غیبت: <span class="highlight">${profile.lastAbsent}</span></p>
-                    `;
-                } else {
-                    memberProfileCard.innerHTML = `<p class="error-message">${result.message}</p>`;
-                }
-            } catch (error) {
-                memberProfileCard.innerHTML = `<p class="error-message">خطا در دریافت اطلاعات پروفایل.</p>`;
+            
+            const result = await apiCall('getMemberProfile', { memberId });
+            if (result.status === 'success') {
+                const profile = result.data;
+                memberProfileCard.innerHTML = `<p>تاریخ ثبت نام: <span class="highlight">${profile.creationDate}</span></p><p>کد ملی: <span class="highlight">${profile.nationalId}</span></p><p>شماره موبایل: <span class="highlight">${profile.mobile}</span></p><hr><p>تعداد کل حضور: <span class="highlight present">${profile.totalPresents}</span></p><p>تعداد کل غیبت: <span class="highlight absent">${profile.totalAbsents}</span></p><p>آخرین حضور: <span class="highlight">${profile.lastPresent}</span></p><p>آخرین غیبت: <span class="highlight">${profile.lastAbsent}</span></p>`;
+            } else {
+                memberProfileCard.innerHTML = `<p class="error-message">${result.message}</p>`;
             }
         }
     });
 
-    resetFiltersButton.addEventListener('click', () => {
-        institutionFilter.value = 'all';
-        dateFilter.value = '';
-        statusFilterButtons.forEach(b => b.classList.remove('active'));
-        document.querySelector('.filter-btn[data-status="all"]').classList.add('active');
-        currentFilters = { institution: 'all', date: '', status: 'all', memberId: null };
-        currentPage = 1;
-        renderPage();
+    // --- ۵. مدیریت منوها و فرم‌ها ---
+    mainMenuButton.addEventListener('click', () => {
+        mainMenuDropdown.style.display = mainMenuDropdown.style.display === 'block' ? 'none' : 'block';
     });
 
-    // --- ۵. مدیریت منوها و پنجره ویرایش ---
-    dashboardContainer.addEventListener('click', (e) => {
+    addInstitutionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('new-inst-username').value.trim();
+        const password = document.getElementById('new-inst-password').value.trim();
+        if (!username || !password) return;
+
+        const payload = { username, password, createdBy: userData.username };
+        addInstStatus.textContent = 'در حال ایجاد...';
+        const result = await apiCall('addInstitution', payload);
+
+        if (result.status === 'success') {
+            addInstStatus.style.color = 'green';
+            addInstStatus.textContent = result.data.message + ' صفحه در حال بارگذاری مجدد است...';
+            setTimeout(() => location.reload(), 2500);
+        } else {
+            addInstStatus.style.color = 'red';
+            addInstStatus.textContent = result.message;
+        }
+    });
+
+    dashboardContainer.addEventListener('click', async (e) => {
         const target = e.target;
         const instId = target.dataset.instId;
         const username = target.dataset.username;
@@ -269,6 +241,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             openEditModal(instId, username);
         } else if (target.dataset.action === 'manage-members') {
             window.location.href = `manage-members.html?id=${instId}&name=${encodeURIComponent(username)}`;
+        } else if (target.dataset.action === 'archive-inst') {
+            if (confirm(`آیا از آرشیو کردن موسسه "${username}" مطمئن هستید؟ کاربر دیگر قادر به ورود نخواهد بود.`)) {
+                const result = await apiCall('archiveInstitution', { institutionId: instId, archivedBy: userData.username });
+                alert(result.data ? result.data.message : result.message);
+                if (result.status === 'success') location.reload();
+            }
         }
     });
     
@@ -282,43 +260,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         editUserModal.style.display = 'flex';
     }
     
-    cancelEditButton.addEventListener('click', () => {
-        editUserModal.style.display = 'none';
-    });
+    cancelEditButton.addEventListener('click', () => { editUserModal.style.display = 'none'; });
 
     editUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const saveButton = document.getElementById('save-user-button');
         saveButton.disabled = true;
         saveButton.textContent = 'در حال ذخیره...';
-
         const payload = {
             institutionId: document.getElementById('edit-user-id').value,
             newUsername: document.getElementById('edit-username').value,
             newPassword: document.getElementById('edit-password').value
         };
-
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'updateUserCredentials', payload })
-            });
-            const result = await response.json();
-
-            if (result.status === 'success') {
-                modalStatusMessage.style.color = 'green';
-                modalStatusMessage.textContent = 'با موفقیت ذخیره شد! صفحه تا ۲ ثانیه دیگر رفرش می‌شود...';
-                 setTimeout(() => { location.reload(); }, 2000);
-            } else {
-                 modalStatusMessage.style.color = '#d93025';
-                 modalStatusMessage.textContent = result.message;
-                 saveButton.disabled = false;
-                 saveButton.textContent = 'ذخیره تغییرات';
-            }
-        } catch (error) {
-            modalStatusMessage.textContent = 'خطا در ارتباط با سرور.';
-            saveButton.disabled = false;
-            saveButton.textContent = 'ذخیره تغییرات';
+        const result = await apiCall('updateUserCredentials', payload);
+        if (result.status === 'success') {
+            modalStatusMessage.style.color = 'green';
+            modalStatusMessage.textContent = 'با موفقیت ذخیره شد! صفحه تا ۲ ثانیه دیگر رفرش می‌شود...';
+             setTimeout(() => { location.reload(); }, 2000);
+        } else {
+             modalStatusMessage.style.color = '#d93025';
+             modalStatusMessage.textContent = result.message;
+             saveButton.disabled = false;
+             saveButton.textContent = 'ذخیره تغییرات';
         }
     });
 
@@ -330,10 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             "تاریخ و زمان": record.date,
             "وضعیت": record.status,
         }));
-        if (dataToExport.length === 0) {
-            alert("داده‌ای برای خروجی گرفتن وجود ندارد.");
-            return;
-        }
+        if (dataToExport.length === 0) { alert("داده‌ای برای خروجی گرفتن وجود ندارد."); return; }
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب");
@@ -344,48 +304,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function refreshData() {
         try {
             const [dashboardResult, adminDataResult] = await Promise.all([
-                fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getDashboardStats' }) }).then(res => res.json()),
-                fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData' }) }).then(res => res.json())
+                apiCall('getDashboardStats', {}),
+                apiCall('getAdminData', {})
             ]);
-
-            if (dashboardResult.status === 'success') {
-                renderDashboard(dashboardResult.data);
-            }
-            if (adminDataResult.status === 'success') {
-                allRecords = adminDataResult.data.reverse();
-                renderPage();
-            }
-        } catch (error) {
-            console.error("خطا در رفرش خودکار:", error);
-        }
+            if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); }
+            if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); }
+        } catch (error) { console.error("خطا در رفرش خودکار:", error); }
     }
 
     async function initializeAdminPanel() {
         loadingMessage.textContent = 'در حال بارگذاری...';
         try {
             const [dashboardResult, adminDataResult, ...memberResults] = await Promise.all([
-                fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getDashboardStats' }) }).then(res => res.json()),
-                fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData' }) }).then(res => res.json()),
-                ...[1, 2, 3, 4, 5].map(id => 
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getMembers', payload: { institutionId: id } }) }).then(res => res.json())
-                )
+                apiCall('getDashboardStats', {}),
+                apiCall('getAdminData', {}),
+                ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(id => apiCall('getMembers', { institutionId: id }))
             ]);
 
-            if (dashboardResult.status === 'success') {
-                renderDashboard(dashboardResult.data);
-            }
-            memberResults.forEach(res => {
-                if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); }
-            });
-            if (adminDataResult.status === 'success') {
-                allRecords = adminDataResult.data.reverse();
-                renderPage();
-            }
+            if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); }
+            memberResults.forEach(res => { if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); } });
+            if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); }
             
             loadingMessage.style.display = 'none';
-
             setInterval(refreshData, 30000);
-
         } catch (error) {
             console.error('خطا در بارگذاری پنل مدیر:', error);
             loadingMessage.textContent = 'خطا در ارتباط با سرور.';
