@@ -5,8 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- شناسایی عناصر عمومی ---
     const instituteNameEl = document.getElementById('institute-name');
     const logoutButton = document.getElementById('logout-button');
-    const manageMembersLink = document.getElementById('manage-members-link');
-    const changeCredentialsBtn = document.getElementById('change-credentials-btn');
+    const instMenuContainer = document.getElementById('inst-menu-container');
+    const instMenuButton = document.getElementById('inst-menu-button');
+    const instMenuDropdown = document.getElementById('inst-menu-dropdown');
 
     // --- متغیرهای عمومی ---
     const userData = JSON.parse(sessionStorage.getItem('userData'));
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkPermissions();
         setupTabs();
         setupModals();
+        setupMenus();
         initializeRegisterTab(); 
     }
 
@@ -53,20 +55,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await apiCall('getSettings', {});
         if (result.status === 'success') {
             const settings = result.data;
+            let canDoSomething = false;
+
             if (settings.allowMemberManagement === true) {
-                manageMembersLink.style.display = 'inline-block';
+                const manageMembersLink = document.getElementById('manage-members-link');
+                manageMembersLink.style.display = 'block';
                 manageMembersLink.href = `manage-members.html?id=${userData.institutionId}&name=${encodeURIComponent(userData.username)}`;
+                canDoSomething = true;
             }
             if (settings.allowUsernameChange === true || settings.allowPasswordChange === true) {
-                changeCredentialsBtn.style.display = 'inline-block';
+                const changeCredentialsBtn = document.getElementById('change-credentials-btn');
+                changeCredentialsBtn.style.display = 'block';
                 document.getElementById('change-username').disabled = !settings.allowUsernameChange;
                 document.getElementById('change-password').disabled = !settings.allowPasswordChange;
+                canDoSomething = true;
+            }
+            
+            if(canDoSomething) {
+                instMenuContainer.style.display = 'block';
             }
         }
     }
 
     // =================================================================
-    // بخش ۲: مدیریت تب‌ها و مودال‌ها
+    // بخش ۲: مدیریت تب‌ها، مودال‌ها و منوها
     // =================================================================
     function setupTabs() {
         document.querySelectorAll('.tab-button').forEach(button => {
@@ -87,8 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupModals() {
         const changeCredentialsModal = document.getElementById('change-credentials-modal');
         const changeCredentialsForm = document.getElementById('change-credentials-form');
+        const changeCredentialsBtn = document.getElementById('change-credentials-btn');
 
         changeCredentialsBtn.addEventListener('click', () => {
+            instMenuDropdown.style.display = 'none';
             changeCredentialsModal.style.display = 'flex';
             document.getElementById('change-creds-status').textContent = '';
             changeCredentialsForm.reset();
@@ -104,9 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const newPassword = document.getElementById('change-password').value.trim();
             const statusEl = document.getElementById('change-creds-status');
             if (!newUsername && !newPassword) return;
-
             const result = await apiCall('changeMyCredentials', { institutionId: userData.institutionId, newUsername, newPassword });
-
             if (result.status === 'success') {
                 statusEl.style.color = 'green';
                 statusEl.textContent = 'اطلاعات با موفقیت تغییر کرد. لطفاً دوباره وارد شوید.';
@@ -117,6 +129,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    function setupMenus() {
+        instMenuButton.addEventListener('click', () => {
+            instMenuDropdown.style.display = instMenuDropdown.style.display === 'block' ? 'none' : 'block';
+        });
+        document.addEventListener('click', (e) => {
+            if (!instMenuContainer.contains(e.target)) {
+                instMenuDropdown.style.display = 'none';
+            }
+        });
+    }
+
 
     // =================================================================
     // بخش ۳: منطق تب ثبت حضور و غیاب
