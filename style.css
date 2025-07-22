@@ -565,3 +565,27 @@ th {
     padding: 15px 0;
     border-bottom: 1px solid #eee;
 }
+/* استایل برای چیدمان جدید هدر پنل موسسه */
+.header-title-menu {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* ایجاد فاصله بین عنوان و منو */
+}
+
+/* اطمینان از اینکه منو به درستی در کنار عنوان قرار می‌گیرد */
+#inst-menu-container {
+    position: relative;
+    margin-left: 0; /* حذف فاصله قبلی */
+}
+
+#inst-menu-container .card-menu-button {
+    position: static; /* حذف حالت شناور */
+    top: auto;
+    left: auto;
+}
+
+#inst-menu-dropdown {
+    top: 40px;  /* تنظیم موقعیت منوی باز شونده */
+    right: 0;
+    left: auto;
+}
