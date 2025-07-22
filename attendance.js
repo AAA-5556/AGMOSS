@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- متغیرهای عمومی ---
     const userData = JSON.parse(sessionStorage.getItem('userData'));
-    let membersMap = {};
+    let membersMap = {}; // {memberId: "FullName"}
 
     // --- بررسی اولیه ورود کاربر ---
     if (!userData || userData.role !== 'institute') {
@@ -32,7 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- تنظیمات اولیه صفحه ---
+    // =================================================================
+    // بخش ۱: منطق و عناصر عمومی صفحه
+    // =================================================================
     function setupPage() {
         instituteNameEl.textContent = `پنل موسسه (${userData.username})`;
         logoutButton.addEventListener('click', () => {
@@ -40,14 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'index.html';
         });
 
-        // بررسی دسترسی‌ها برای نمایش دکمه‌ها
         checkPermissions();
-        // راه‌اندازی منطق تب‌ها
         setupTabs();
-        // راه‌اندازی منطق مودال‌ها
         setupModals();
-        // بارگذاری اطلاعات تب فعال (ثبت حضور و غیاب)
-        initializeRegisterTab();
+        initializeRegisterTab(); // تب پیش‌فرض را بارگذاری کن
     }
 
     async function checkPermissions() {
@@ -66,8 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- مدیریت تب‌ها ---
     function setupTabs() {
+        const historyTableBody = document.querySelector('#history-table-body');
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
                 document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
@@ -75,14 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.classList.add('active');
                 document.getElementById(button.dataset.tab + '-tab').classList.add('active');
                 
-                if (button.dataset.tab === 'history' && document.querySelector('#history-table-body').innerHTML === '') {
-                    fetchHistory();
+                if (button.dataset.tab === 'history' && historyTableBody.innerHTML === '') {
+                    initializeHistoryTab();
                 }
             });
         });
     }
 
-    // --- مدیریت مودال‌ها ---
     function setupModals() {
         const changeCredentialsModal = document.getElementById('change-credentials-modal');
         const changeCredentialsForm = document.getElementById('change-credentials-form');
@@ -119,26 +116,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- منطق تب ثبت حضور و غیاب ---
+    // =================================================================
+    // بخش ۲: منطق تب ثبت حضور و غیاب
+    // =================================================================
     async function initializeRegisterTab() { 
         const elements = {
             currentDateEl: document.getElementById('current-date'),
             memberListBody: document.getElementById('member-list-body'),
-            attendanceForm: document.getElementById('attendance-form')
         };
         elements.currentDateEl.textContent = new Date().toLocaleDateString('fa-IR');
         elements.memberListBody.innerHTML = '<tr><td colspan="2">در حال بارگذاری...</td></tr>'; 
+        
         const [membersResult, todaysAttendanceResult] = await Promise.all([ 
             apiCall('getMembers', { institutionId: userData.institutionId }), 
             apiCall('getTodaysAttendance', { institutionId: userData.institutionId }) 
         ]); 
+        
         if (membersResult.status !== 'success') { elements.memberListBody.innerHTML = '<tr><td colspan="2">خطا در دریافت لیست اعضا.</td></tr>'; return; } 
+        
         const members = membersResult.data; 
         members.forEach(m => membersMap[m.memberId] = m.fullName); 
         let todaysAttendance = {}; 
         if (todaysAttendanceResult.status === 'success') { todaysAttendanceResult.data.forEach(r => { todaysAttendance[r.memberId] = r.status; });} 
+        
         elements.memberListBody.innerHTML = ''; 
         if (members.length === 0) { elements.memberListBody.innerHTML = `<tr><td colspan="2">هیچ عضو فعالی یافت نشد.</td></tr>`; return; } 
+        
         members.forEach(member => { 
             const previousStatus = todaysAttendance[member.memberId]; 
             const isPresentChecked = previousStatus === 'حاضر' ? 'checked' : ''; 
@@ -154,9 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault(); 
         const saveButton = document.getElementById('submit-attendance');
         const statusMessage = document.getElementById('status-message');
-        saveButton.disabled = true; 
-        saveButton.textContent = 'در حال ثبت...'; 
-        statusMessage.textContent = ''; 
+        saveButton.disabled = true; saveButton.textContent = 'در حال ثبت...'; statusMessage.textContent = ''; 
         const attendanceData = []; 
         const rows = document.getElementById('member-list-body').querySelectorAll('tr'); 
         rows.forEach(row => { 
@@ -166,8 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }); 
         if (rows.length > 0 && attendanceData.length !== rows.length) { 
             statusMessage.textContent = 'لطفاً وضعیت تمام اعضا را مشخص کنید.'; 
-            saveButton.disabled = false; 
-            saveButton.textContent = 'ثبت نهایی'; 
+            saveButton.disabled = false; saveButton.textContent = 'ثبت نهایی'; 
             return; 
         } 
         const result = await apiCall('saveAttendance', { institutionId: userData.institutionId, data: attendanceData });
@@ -178,20 +178,21 @@ document.addEventListener('DOMContentLoaded', () => {
         } else { 
             statusMessage.style.color = '#d93025'; 
             statusMessage.textContent = result.message || 'خطا در ثبت اطلاعات.'; 
-            saveButton.disabled = false; 
-            saveButton.textContent = 'ثبت نهایی'; 
+            saveButton.disabled = false; saveButton.textContent = 'ثبت نهایی'; 
         } 
     });
     
-    // --- منطق تب تاریخچه ---
-    async function fetchHistory() {
-        const historyTableBody = document.getElementById('history-table-body');
+    // =================================================================
+    // بخش ۳: منطق تب تاریخچه
+    // =================================================================
+    function initializeHistoryTab() {
         let fullHistory = [];
         let currentHistoryFilters = { status: 'all' };
         let currentHistoryPage = 1;
-
+        const historyTableBody = document.getElementById('history-table-body');
+        const historyPaginationContainer = document.getElementById('history-pagination-container');
+        
         function renderHistoryPage() {
-            const historyPaginationContainer = document.getElementById('history-pagination-container');
             let filteredHistory = [...fullHistory];
             if (currentHistoryFilters.status !== 'all') {
                 filteredHistory = filteredHistory.filter(r => r.status === currentHistoryFilters.status);
@@ -216,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function renderHistoryPagination(totalPages) {
-            const historyPaginationContainer = document.getElementById('history-pagination-container');
             historyPaginationContainer.innerHTML = ''; if (totalPages <= 1) return;
             for (let i = 1; i <= totalPages; i++) {
                 const pageButton = document.createElement('button'); pageButton.textContent = i;
@@ -226,15 +226,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        historyTableBody.innerHTML = '<tr><td colspan="3">در حال بارگذاری تاریخچه...</td></tr>';
-        const result = await apiCall('getInstitutionHistory', { institutionId: userData.institutionId });
-        if (result.status === 'success') {
-            fullHistory = result.data;
-            renderHistoryPage();
-        } else {
-             historyTableBody.innerHTML = `<tr><td colspan="3">خطا در بارگذاری تاریخچه.</td></tr>`;
+        async function fetchHistory() {
+            historyTableBody.innerHTML = '<tr><td colspan="3">در حال بارگذاری تاریخچه...</td></tr>';
+            const result = await apiCall('getInstitutionHistory', { institutionId: userData.institutionId });
+            if (result.status === 'success') {
+                fullHistory = result.data;
+                renderHistoryPage();
+            } else {
+                 historyTableBody.innerHTML = `<tr><td colspan="3">خطا در بارگذاری تاریخچه.</td></tr>`;
+            }
         }
-
+        
         document.querySelectorAll('#history-tab .filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('#history-tab .filter-btn').forEach(b => b.classList.remove('active'));
@@ -255,6 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
             XLSX.utils.book_append_sheet(workbook, worksheet, "تاریخچه حضور و غیاب"); 
             XLSX.writeFile(workbook, `History_${userData.username}.xlsx`); 
         });
+
+        fetchHistory();
     }
 
     // --- اجرای اولیه ---
