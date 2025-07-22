@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!userData || !userData.token || userData.role !== 'institute') {
         localStorage.removeItem('userData');
         window.location.href = 'index.html';
-        return; // اجرای اسکریپت را متوقف کن
+        return; 
     }
 
     // --- شناسایی عناصر عمومی ---
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const instMenuContainer = document.getElementById('inst-menu-container');
     const instMenuButton = document.getElementById('inst-menu-button');
     const instMenuDropdown = document.getElementById('inst-menu-dropdown');
-
+    
     // --- متغیرهای عمومی ---
     let membersMap = {}; 
     let historyInitialized = false;
@@ -49,16 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // =================================================================
-    // بخش ۲: راه‌اندازی اولیه صفحه
-    // =================================================================
+    // --- راه‌اندازی اولیه صفحه ---
     function initializePage() {
         instituteNameEl.textContent = `پنل موسسه (${userData.username})`;
         logoutButton.addEventListener('click', () => {
             localStorage.removeItem('userData');
             window.location.href = 'index.html';
         });
-
         checkPermissions();
         setupTabs();
         setupModals();
@@ -90,9 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // =================================================================
-    // بخش ۳: مدیریت تب‌ها، مودال‌ها و منوها
-    // =================================================================
+    // --- مدیریت تب‌ها، مودال‌ها و منوها ---
     function setupTabs() {
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
@@ -100,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
                 button.classList.add('active');
                 document.getElementById(button.dataset.tab + '-tab').classList.add('active');
-                
                 if (button.dataset.tab === 'history' && !historyInitialized) {
                     initializeHistoryTab();
                     historyInitialized = true;
@@ -113,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const changeCredentialsModal = document.getElementById('change-credentials-modal');
         const changeCredentialsForm = document.getElementById('change-credentials-form');
         const changeCredentialsBtn = document.getElementById('change-credentials-btn');
-
         changeCredentialsBtn.addEventListener('click', () => {
             instMenuDropdown.style.display = 'none';
             changeCredentialsModal.style.display = 'flex';
@@ -154,32 +147,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
-    // =================================================================
-    // بخش ۴: منطق تب ثبت حضور و غیاب
-    // =================================================================
+    // --- منطق تب ثبت حضور و غیاب ---
     async function initializeRegisterTab() { 
         const currentDateEl = document.getElementById('current-date');
         const memberListBody = document.getElementById('member-list-body');
-        
         currentDateEl.textContent = new Date().toLocaleDateString('fa-IR');
         memberListBody.innerHTML = '<tr><td colspan="2">در حال بارگذاری...</td></tr>'; 
-        
         const [membersResult, todaysAttendanceResult] = await Promise.all([ 
             apiCall('getMembers', {}), 
             apiCall('getTodaysAttendance', {}) 
         ]); 
-        
         if (membersResult.status !== 'success') { memberListBody.innerHTML = '<tr><td colspan="2">خطا در دریافت لیست اعضا.</td></tr>'; return; } 
-        
         const members = membersResult.data; 
         members.forEach(m => membersMap[m.memberId] = m.fullName); 
         let todaysAttendance = {}; 
         if (todaysAttendanceResult.status === 'success') { todaysAttendanceResult.data.forEach(r => { todaysAttendance[r.memberId] = r.status; });} 
-        
         memberListBody.innerHTML = ''; 
         if (members.length === 0) { memberListBody.innerHTML = `<tr><td colspan="2">هیچ عضو فعالی یافت نشد.</td></tr>`; return; } 
-        
         members.forEach(member => { 
             const previousStatus = todaysAttendance[member.memberId]; 
             const isPresentChecked = previousStatus === 'حاضر' ? 'checked' : ''; 
@@ -220,9 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     });
     
-    // =================================================================
-    // بخش ۵: منطق تب تاریخچه
-    // =================================================================
+    // --- منطق تب تاریخچه ---
     function initializeHistoryTab() {
         let fullHistory = [];
         let currentHistoryFilters = { status: 'all' };
