@@ -477,8 +477,34 @@ th {
     margin-top: 20px;
 }
 
-#cancel-edit-button {
+.cancel-btn { /* کلاس مشترک برای دکمه‌های انصراف */
     background-color: #6c757d;
+}
+
+/* --- استایل جدید برای کارت افزودن --- */
+.add-inst-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-style: dashed;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: #6c757d;
+    min-height: 170px; /* برای هم اندازه شدن با بقیه کارت‌ها */
+}
+.add-inst-card:hover {
+    background-color: #e9ecef;
+}
+.add-inst-card .plus-sign {
+    font-size: 3.5em;
+    line-height: 1;
+    margin-top: 10px;
+}
+.add-inst-card h3 {
+    border: none;
+    padding: 0;
+    margin-bottom: 5px;
 }
 
 /* =================================== */
@@ -526,7 +552,7 @@ th {
         gap: 15px;
     }
 
-    .controls, .add-inst-form {
+    .controls {
         flex-direction: column;
         align-items: stretch;
     }
