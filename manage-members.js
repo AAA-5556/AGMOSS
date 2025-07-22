@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ❗ مهم: لینک API خود را اینجا قرار دهید
     const API_URL = "https://script.google.com/macros/s/AKfycbyFhhTg_2xf6TqTBdybO883H4f6562sTDUSY8dbQJyN2K-nmFVD7ViTgWllEPwOaf7V/exec";
 
+    // --- ۱. کد نگهبان و بررسی هویت ---
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (!userData || !userData.token || userData.role !== 'admin') {
+        localStorage.removeItem('userData');
+        window.location.href = 'index.html';
+        return;
+    }
+
     // --- شناسایی عناصر ---
     const pageTitle = document.getElementById('manage-page-title');
     const addForm = document.getElementById('add-members-form');
@@ -11,7 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addStatusMessage = document.getElementById('add-status-message');
     const activeMembersBody = document.querySelector('#active-members-table tbody');
     const inactiveMembersBody = document.querySelector('#inactive-members-table tbody');
-    
     const editModal = document.getElementById('edit-member-modal');
     const editForm = document.getElementById('edit-member-form');
     const cancelEditBtn = document.getElementById('cancel-member-edit');
@@ -27,20 +34,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     pageTitle.textContent = `مدیریت اعضای موسسه: ${institutionName}`;
 
-    // --- توابع ---
+    // --- تابع کمکی برای تماس با API (با ارسال توکن) ---
     async function apiCall(action, payload) {
         try {
+            const token = JSON.parse(localStorage.getItem('userData')).token;
             const response = await fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action, payload })
+                body: JSON.stringify({ action, payload, token })
             });
-            return await response.json();
+            const result = await response.json();
+            if (result.status === 'error' && (result.message.includes('منقضی') || result.message.includes('نامعتبر'))) {
+                alert(result.message);
+                localStorage.removeItem('userData');
+                window.location.href = 'index.html';
+            }
+            return result;
         } catch (error) {
             console.error('API Call Error:', error);
             return { status: 'error', message: 'خطا در ارتباط با سرور.' };
         }
     }
 
+    // --- توابع ---
     async function fetchAllMembers() {
         activeMembersBody.innerHTML = '<tr><td colspan="5">در حال بارگذاری...</td></tr>';
         inactiveMembersBody.innerHTML = '<tr><td colspan="5">در حال بارگذاری...</td></tr>';
@@ -57,6 +72,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderTables(members) {
         activeMembersBody.innerHTML = '';
         inactiveMembersBody.innerHTML = '';
+        
+        if (members.length === 0) {
+            activeMembersBody.innerHTML = '<tr><td colspan="5">هیچ عضو فعالی یافت نشد.</td></tr>';
+            inactiveMembersBody.innerHTML = '<tr><td colspan="5">هیچ عضو غیرفعالی یافت نشد.</td></tr>';
+        }
         
         members.forEach(member => {
             const row = document.createElement('tr');
@@ -112,17 +132,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.body.addEventListener('click', async (e) => {
-        const memberId = e.target.dataset.id;
+        const target = e.target;
+        const memberId = target.dataset.id;
         if (!memberId) return;
 
         let action = '';
-        if (e.target.classList.contains('delete-btn')) {
+        if (target.classList.contains('delete-btn')) {
             action = 'deleteMember';
             if (!confirm(`آیا از حذف (غیرفعال کردن) این عضو مطمئن هستید؟`)) return;
-        } else if (e.target.classList.contains('restore-btn')) {
+        } else if (target.classList.contains('restore-btn')) {
             action = 'restoreMember';
-        } else if (e.target.classList.contains('edit-btn')) {
-            const memberData = JSON.parse(e.target.closest('tr').dataset.member);
+        } else if (target.classList.contains('edit-btn')) {
+            const memberData = JSON.parse(target.closest('tr').dataset.member);
             document.getElementById('edit-member-id').value = memberData.memberId;
             document.getElementById('edit-fullname').value = memberData.fullName;
             document.getElementById('edit-nationalid').value = memberData.nationalId;
@@ -132,6 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (action) {
+            target.disabled = true;
             await apiCall(action, { institutionId, memberId });
             fetchAllMembers();
         }
