@@ -65,19 +65,22 @@ label {
 input[type="text"],
 input[type="password"],
 input[type="date"],
-select {
+select,
+textarea {
     width: 100%;
     padding: 12px;
     border: 1px solid #ccc;
     border-radius: 8px;
     box-sizing: border-box;
+    font-family: inherit;
     transition: border-color 0.3s;
 }
 
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="date"]:focus,
-select:focus {
+select:focus,
+textarea:focus {
     outline: none;
     border-color: #007bff;
 }
@@ -393,20 +396,6 @@ th {
 }
 .main-menu-container {
     position: relative;
-    margin-left: 15px;
-}
-#main-menu-dropdown {
-    left: auto;
-    right: 0;
-}
-#main-menu-dropdown a {
-    display: block;
-    padding: 10px 15px;
-    text-decoration: none;
-    color: #333;
-}
-#main-menu-dropdown a:hover {
-    background-color: #f1f1f1;
 }
 
 .card-menu-dropdown {
@@ -421,6 +410,20 @@ th {
     z-index: 10;
     width: 170px;
     overflow: hidden;
+}
+
+#main-menu-dropdown {
+    left: auto;
+    right: 0;
+}
+#main-menu-dropdown a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #333;
+}
+#main-menu-dropdown a:hover {
+    background-color: #f1f1f1;
 }
 
 .card-menu-dropdown button, .card-menu-dropdown a {
@@ -477,11 +480,11 @@ th {
     margin-top: 20px;
 }
 
-.cancel-btn { /* کلاس مشترک برای دکمه‌های انصراف */
+.cancel-btn {
     background-color: #6c757d;
 }
 
-/* --- استایل جدید برای کارت افزودن --- */
+/* Add Institution Card Style */
 .add-inst-card {
     display: flex;
     flex-direction: column;
@@ -491,7 +494,7 @@ th {
     cursor: pointer;
     transition: background-color 0.3s;
     color: #6c757d;
-    min-height: 170px; /* برای هم اندازه شدن با بقیه کارت‌ها */
+    min-height: 170px;
 }
 .add-inst-card:hover {
     background-color: #e9ecef;
@@ -505,6 +508,34 @@ th {
     border: none;
     padding: 0;
     margin-bottom: 5px;
+}
+
+/* Header Title & Menu Grouping */
+.header-title-menu {
+    display: flex;
+    align-items: center;
+    gap: 15px; 
+}
+.header-title-menu h2 {
+    margin-bottom: 0;
+}
+.main-menu-container .card-menu-button,
+#inst-menu-container .card-menu-button {
+    position: static;
+}
+#inst-menu-dropdown {
+    top: 40px;
+    right: 0;
+    left: auto;
+}
+
+/* Settings Page */
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
 }
 
 /* =================================== */
@@ -552,49 +583,8 @@ th {
         gap: 15px;
     }
 
-    .controls {
+    .controls, .add-inst-form {
         flex-direction: column;
         align-items: stretch;
     }
-}
-/* استایل برای صفحه تنظیمات */
-.setting-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
-}
-/* استایل برای چیدمان جدید هدر پنل موسسه */
-.header-title-menu {
-    display: flex;
-    align-items: center;
-    gap: 15px; /* ایجاد فاصله بین عنوان و منو */
-}
-
-/* اطمینان از اینکه منو به درستی در کنار عنوان قرار می‌گیرد */
-#inst-menu-container {
-    position: relative;
-    margin-left: 0; /* حذف فاصله قبلی */
-}
-
-#inst-menu-container .card-menu-button {
-    position: static; /* حذف حالت شناور */
-    top: auto;
-    left: auto;
-}
-
-#inst-menu-dropdown {
-    top: 40px;  /* تنظیم موقعیت منوی باز شونده */
-    right: 0;
-    left: auto;
-}
-/* استایل برای چیدمان جدید هدر */
-.header-title-menu {
-    display: flex;
-    align-items: center;
-    gap: 15px; 
-}
-.header-title-menu h2 {
-    margin-bottom: 0;
 }
