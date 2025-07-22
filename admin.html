@@ -23,22 +23,6 @@
             </div>
         </header>
 
-        <div class="card">
-            <h3>افزودن موسسه جدید</h3>
-            <form id="add-institution-form" class="add-inst-form">
-                <div class="form-group">
-                    <label for="new-inst-username">نام کاربری جدید</label>
-                    <input type="text" id="new-inst-username" required>
-                </div>
-                <div class="form-group">
-                    <label for="new-inst-password">رمز عبور جدید</label>
-                    <input type="text" id="new-inst-password" required>
-                </div>
-                <button type="submit">ایجاد موسسه</button>
-            </form>
-            <p id="add-inst-status" class="error-message"></p>
-        </div>
-
         <div id="dashboard-container" class="dashboard">
             </div>
         
@@ -112,10 +96,31 @@
                 </div>
                 <div class="modal-actions">
                     <button type="submit" id="save-user-button">ذخیره تغییرات</button>
-                    <button type="button" id="cancel-edit-button">انصراف</button>
+                    <button type="button" class="cancel-btn">انصراف</button>
                 </div>
             </form>
             <p id="modal-status-message" class="error-message"></p>
+        </div>
+    </div>
+    
+    <div id="add-institution-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>افزودن موسسه جدید</h3>
+            <form id="add-institution-form">
+                <div class="form-group">
+                    <label for="new-inst-username">نام کاربری جدید</label>
+                    <input type="text" id="new-inst-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-inst-password">رمز عبور جدید</label>
+                    <input type="text" id="new-inst-password" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit">ایجاد موسسه</button>
+                    <button type="button" class="cancel-btn">انصراف</button>
+                </div>
+            </form>
+            <p id="add-inst-status" class="error-message"></p>
         </div>
     </div>
     
