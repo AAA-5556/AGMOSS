@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- متغیرهای عمومی ---
     const userData = JSON.parse(sessionStorage.getItem('userData'));
-    let membersMap = {};
+    let membersMap = {}; 
+    let historyInitialized = false;
 
     // --- بررسی اولیه ورود کاربر ---
     if (!userData || userData.role !== 'institute') {
@@ -31,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return { status: 'error', message: 'خطا در ارتباط با سرور.' };
         }
     }
-
+    
     // =================================================================
     // بخش ۱: راه‌اندازی اولیه صفحه
     // =================================================================
@@ -45,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkPermissions();
         setupTabs();
         setupModals();
-        initializeRegisterTab(); // بارگذاری تب پیش‌فرض
+        initializeRegisterTab(); 
     }
 
     async function checkPermissions() {
@@ -68,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // بخش ۲: مدیریت تب‌ها و مودال‌ها
     // =================================================================
     function setupTabs() {
-        let historyInitialized = false; // برای جلوگیری از بارگذاری چندباره تاریخچه
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
                 document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
