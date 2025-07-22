@@ -16,12 +16,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const memberProfileView = document.getElementById('member-profile-view');
     const memberProfileName = document.getElementById('member-profile-name');
     const memberProfileCard = document.getElementById('member-profile-card');
+    
+    // عناصر مودال ویرایش کاربر
     const editUserModal = document.getElementById('edit-user-modal');
     const editUserForm = document.getElementById('edit-user-form');
-    const cancelEditButton = document.getElementById('cancel-edit-button');
-    const modalStatusMessage = document.getElementById('modal-status-message');
+    
+    // عناصر مودال افزودن موسسه
+    const addInstitutionModal = document.getElementById('add-institution-modal');
     const addInstitutionForm = document.getElementById('add-institution-form');
     const addInstStatus = document.getElementById('add-inst-status');
+    
+    // دکمه‌های انصراف در هر دو مودال
+    document.querySelectorAll('.cancel-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            editUserModal.style.display = 'none';
+            addInstitutionModal.style.display = 'none';
+        });
+    });
+
+    // عناصر منوی اصلی
     const mainMenuButton = document.getElementById('main-menu-button');
     const mainMenuDropdown = document.getElementById('main-menu-dropdown');
 
@@ -97,6 +110,18 @@ document.addEventListener('DOMContentLoaded', async () => {
              <button data-action="edit-user" data-inst-id="0" data-username="${userData.username}" class="admin-edit-btn">ویرایش اطلاعات ورود من</button>
         `;
         dashboardContainer.appendChild(adminCard);
+
+        // کارت افزودن موسسه
+        const addCard = document.createElement('div');
+        addCard.className = 'stat-card add-inst-card';
+        addCard.innerHTML = `<h3>افزودن موسسه</h3><div class="plus-sign">+</div>`;
+        addCard.addEventListener('click', () => {
+            addInstitutionForm.reset();
+            addInstStatus.textContent = '';
+            addInstitutionModal.style.display = 'flex';
+        });
+        dashboardContainer.appendChild(addCard);
+
         populateFilters();
     }
     
@@ -218,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (result.status === 'success') {
             addInstStatus.style.color = 'green';
-            addInstStatus.textContent = result.data.message + ' صفحه در حال بارگذاری مجدد است...';
+            addInstStatus.textContent = result.data.message + ' صفحه تا ۲ ثانیه دیگر رفرش می‌شود...';
             setTimeout(() => location.reload(), 2500);
         } else {
             addInstStatus.style.color = 'red';
@@ -227,31 +252,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     dashboardContainer.addEventListener('click', async (e) => {
-        const target = e.target;
+        const target = e.target.closest('[data-action]');
+        if(!target) return;
+
+        const action = target.dataset.action;
         const instId = target.dataset.instId;
         const username = target.dataset.username;
 
-        if (target.classList.contains('card-menu-button')) {
-            const menu = document.getElementById(`menu-${instId}`);
-            document.querySelectorAll('.card-menu-dropdown').forEach(m => {
-                if(m.id !== menu.id) m.style.display = 'none';
-            });
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        } else if (target.dataset.action === 'edit-user') {
+        document.querySelectorAll('.card-menu-dropdown').forEach(m => m.style.display = 'none');
+        
+        if (action === 'edit-user') {
             openEditModal(instId, username);
-        } else if (target.dataset.action === 'manage-members') {
+        } else if (action === 'manage-members') {
             window.location.href = `manage-members.html?id=${instId}&name=${encodeURIComponent(username)}`;
-        } else if (target.dataset.action === 'archive-inst') {
+        } else if (action === 'archive-inst') {
             if (confirm(`آیا از آرشیو کردن موسسه "${username}" مطمئن هستید؟ کاربر دیگر قادر به ورود نخواهد بود.`)) {
                 const result = await apiCall('archiveInstitution', { institutionId: instId, archivedBy: userData.username });
                 alert(result.data ? result.data.message : result.message);
                 if (result.status === 'success') location.reload();
             }
+        } else if (action === 'toggle-menu') {
+             const menu = document.getElementById(`menu-${instId}`);
+             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
     });
     
     function openEditModal(id, currentUsername) {
-        document.querySelectorAll('.card-menu-dropdown').forEach(m => m.style.display = 'none');
         modalStatusMessage.textContent = '';
         editUserForm.reset();
         document.getElementById('edit-user-id').value = id;
@@ -260,8 +286,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         editUserModal.style.display = 'flex';
     }
     
-    cancelEditButton.addEventListener('click', () => { editUserModal.style.display = 'none'; });
-
     editUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const saveButton = document.getElementById('save-user-button');
