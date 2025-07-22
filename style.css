@@ -557,3 +557,11 @@ th {
         align-items: stretch;
     }
 }
+/* استایل برای صفحه تنظیمات */
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
