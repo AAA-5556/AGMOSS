@@ -589,3 +589,12 @@ th {
     right: 0;
     left: auto;
 }
+/* استایل برای چیدمان جدید هدر */
+.header-title-menu {
+    display: flex;
+    align-items: center;
+    gap: 15px; 
+}
+.header-title-menu h2 {
+    margin-bottom: 0;
+}
