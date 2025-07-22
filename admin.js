@@ -48,14 +48,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentFilters = { institution: 'all', date: '', status: 'all', memberId: null };
     let currentPage = 1; 
     const ITEMS_PER_PAGE = 30;
-    
-    document.querySelector('.page-header h2').textContent = `پنل مدیریت (${userData.username})`;
+
+    // --- تنظیمات اولیه ---
+    document.querySelector('.page-header h2#admin-title').textContent = `پنل مدیریت (${userData.username})`;
     logoutButton.addEventListener('click', () => { localStorage.removeItem('userData'); window.location.href = 'index.html'; });
     
     // --- تابع کمکی برای تماس با API ---
     async function apiCall(action, payload) { try { const token = JSON.parse(localStorage.getItem('userData')).token; const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, payload, token }) }); const result = await response.json(); if (result.status === 'error' && (result.message.includes('منقضی') || result.message.includes('نامعتبر'))) { alert(result.message); localStorage.removeItem('userData'); window.location.href = 'index.html'; } return result; } catch (error) { console.error('API Call Error:', error); return { status: 'error', message: 'خطا در ارتباط با سرور.' }; } }
 
-    // --- ۲. توابع نمایش ---
+    // --- توابع نمایش ---
     function renderDashboard(stats) {
         dashboardContainer.innerHTML = '';
         stats.forEach(stat => {
@@ -81,24 +82,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderPage() { memberProfileView.style.display = currentFilters.memberId ? 'block' : 'none'; const filteredRecords = applyAllFilters(); const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE); currentPage = Math.min(currentPage, totalPages || 1); const startIndex = (currentPage - 1) * ITEMS_PER_PAGE; const pageRecords = filteredRecords.slice(startIndex, startIndex + ITEMS_PER_PAGE); renderTable(pageRecords); renderPagination(totalPages); }
     function renderTable(records) { adminDataBody.innerHTML = ''; let lastDate = null; if (records.length === 0) { adminDataBody.innerHTML = '<tr><td colspan="4">رکوردی یافت نشد.</td></tr>'; return; } records.forEach(record => { const recordDate = record.date.split(/,|،/)[0].trim(); if (recordDate !== lastDate && !currentFilters.memberId) { const dateRow = document.createElement('tr'); dateRow.innerHTML = `<td colspan="4" class="date-group-header">تاریخ: ${recordDate}</td>`; adminDataBody.appendChild(dateRow); lastDate = recordDate; } const row = document.createElement('tr'); const memberName = memberNames[record.memberId] || `(شناسه: ${record.memberId})`; const instName = institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`; row.innerHTML = `<td>${instName}</td><td><a href="#" class="clickable-member" data-member-id="${record.memberId}">${memberName}</a></td><td>${record.date}</td><td>${record.status}</td>`; adminDataBody.appendChild(row); }); }
     function renderPagination(totalPages) { paginationContainer.innerHTML = ''; if (totalPages <= 1) return; const createButton = (text, page, isDisabled = false, isActive = false) => { const button = document.createElement('button'); button.textContent = text; button.disabled = isDisabled; if (isActive) button.classList.add('active'); button.addEventListener('click', () => { currentPage = page; renderPage(); }); return button; }; paginationContainer.appendChild(createButton('قبلی', currentPage - 1, currentPage === 1)); for (let i = 1; i <= totalPages; i++) { paginationContainer.appendChild(createButton(i, i, false, i === currentPage)); } paginationContainer.appendChild(createButton('بعدی', currentPage + 1, currentPage === totalPages)); }
+    
     function applyAllFilters() {
         let filtered = [...allRecords];
         if (currentFilters.institution !== 'all') { filtered = filtered.filter(r => r.institutionId == currentFilters.institution); }
-        if (currentFilters.date) {
-            const persianDate = currentFilters.date;
-            filtered = filtered.filter(record => record.date.startsWith(persianDate));
+        if (dateFilter.value) { // Use the raw value from the Shamsi calendar
+            filtered = filtered.filter(record => record.date.startsWith(dateFilter.value));
         }
         if (currentFilters.status !== 'all') { filtered = filtered.filter(r => r.status === currentFilters.status); }
         if (currentFilters.memberId) { filtered = filtered.filter(r => r.memberId == currentFilters.memberId); }
         return filtered;
     }
 
-    // --- ۴. تنظیم Event Listeners ---
+    // --- Event Listeners ---
     function setupEventListeners() {
         institutionFilter.addEventListener('change', (e) => { currentFilters.institution = e.target.value; currentFilters.memberId = null; currentPage = 1; renderPage(); });
-        dateFilter.addEventListener('change', (e) => { currentFilters.date = e.target.value; currentPage = 1; renderPage(); });
+        dateFilter.addEventListener('change', (e) => { currentPage = 1; renderPage(); });
         statusFilterButtons.forEach(btn => { btn.addEventListener('click', () => { statusFilterButtons.forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentFilters.status = btn.dataset.status; currentPage = 1; renderPage(); }); });
-        resetFiltersButton.addEventListener('click', () => { institutionFilter.value = 'all'; dateFilter.value = ''; $(dateFilter).pDatepicker("clear"); statusFilterButtons.forEach(b => b.classList.remove('active')); document.querySelector('.filter-btn[data-status="all"]').classList.add('active'); currentFilters = { institution: 'all', date: '', status: 'all', memberId: null }; currentPage = 1; renderPage(); });
+        resetFiltersButton.addEventListener('click', () => { institutionFilter.value = 'all'; $(dateFilter).pDatepicker("clear"); statusFilterButtons.forEach(b => b.classList.remove('active')); document.querySelector('.filter-btn[data-status="all"]').classList.add('active'); currentFilters = { institution: 'all', date: '', status: 'all', memberId: null }; currentPage = 1; renderPage(); });
         adminDataBody.addEventListener('click', async (e) => { if (e.target.classList.contains('clickable-member')) { e.preventDefault(); const memberId = e.target.dataset.memberId; currentFilters.memberId = memberId; memberProfileName.textContent = `پروفایل عضو: ${e.target.textContent}`; memberProfileCard.innerHTML = `<p>در حال دریافت آمار...</p>`; memberProfileView.style.display = 'block'; currentPage = 1; renderPage(); const result = await apiCall('getMemberProfile', { memberId }); if (result.status === 'success') { const profile = result.data; memberProfileCard.innerHTML = `<p>تاریخ ثبت نام: <span class="highlight">${profile.creationDate}</span></p><p>کد ملی: <span class="highlight">${profile.nationalId}</span></p><p>شماره موبایل: <span class="highlight">${profile.mobile}</span></p><hr><p>تعداد کل حضور: <span class="highlight present">${profile.totalPresents}</span></p><p>تعداد کل غیبت: <span class="highlight absent">${profile.totalAbsents}</span></p><p>آخرین حضور: <span class="highlight">${profile.lastPresent}</span></p><p>آخرین غیبت: <span class="highlight">${profile.lastAbsent}</span></p>`; } else { memberProfileCard.innerHTML = `<p class="error-message">${result.message}</p>`; } } });
         mainMenuButton.addEventListener('click', () => { mainMenuDropdown.style.display = mainMenuDropdown.style.display === 'block' ? 'none' : 'block'; });
         addInstitutionForm.addEventListener('submit', async (e) => { e.preventDefault(); const username = document.getElementById('new-inst-username').value.trim(); const password = document.getElementById('new-inst-password').value.trim(); if (!username || !password) return; const payload = { username, password }; addInstStatus.textContent = 'در حال ایجاد...'; const result = await apiCall('addInstitution', payload); if (result.status === 'success') { addInstStatus.style.color = 'green'; addInstStatus.textContent = result.data.message + ' صفحه در حال بارگذاری مجدد است...'; setTimeout(() => location.reload(), 2500); } else { addInstStatus.style.color = 'red'; addInstStatus.textContent = result.message; } });
@@ -108,8 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         exportExcelButton.addEventListener('click', () => { const dataToExport = applyAllFilters().map(record => ({ "موسسه": institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`, "نام عضو": memberNames[record.memberId] || `(شناسه: ${record.memberId})`, "تاریخ و زمان": record.date, "وضعیت": record.status, })); if (dataToExport.length === 0) { alert("داده‌ای برای خروجی گرفتن وجود ندارد."); return; } const worksheet = XLSX.utils.json_to_sheet(dataToExport); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب"); XLSX.writeFile(workbook, "AttendanceReport.xlsx"); });
     }
     
-    // --- ۵. بارگذاری اولیه و رفرش خودکار ---
-    async function refreshData() { try { const [dashboardResult, adminDataResult] = await Promise.all([ apiCall('getDashboardStats', {}), apiCall('getAdminData', {}) ]); if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); } if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); } } catch (error) { console.error("خطا در رفرش خودکار:", error); } }
+    // --- بارگذاری اولیه ---
     async function initializeAdminPanel() {
         loadingMessage.textContent = 'در حال بارگذاری...';
         try {
@@ -121,16 +121,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); }
             memberResults.forEach(res => { if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); } });
             if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); }
-            
             loadingMessage.style.display = 'none';
-            setInterval(refreshData, 30000);
         } catch (error) {
             console.error('خطا در بارگذاری پنل مدیر:', error);
             loadingMessage.textContent = 'خطا در ارتباط با سرور.';
         }
     }
     
-    // --- اجرای اولیه ---
     setupEventListeners();
     initializeAdminPanel();
 });
