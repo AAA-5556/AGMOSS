@@ -11,6 +11,13 @@
         <header class="page-header">
             <h2 id="institute-name">بارگذاری...</h2>
             <div class="header-actions">
+                <div id="inst-menu-container" class="main-menu-container" style="display: none;">
+                    <button id="inst-menu-button" class="card-menu-button">⋮</button>
+                    <div id="inst-menu-dropdown" class="card-menu-dropdown">
+                        <a href="#" id="manage-members-link" style="display: none; text-decoration: none; color: #333;">مدیریت اعضا</a>
+                        <button id="change-credentials-btn" style="display: none;">تغییر اطلاعات کاربری</button>
+                    </div>
+                </div>
                 <button id="logout-button">خروج</button>
             </div>
         </header>
@@ -53,6 +60,27 @@
                 <tbody id="history-table-body"></tbody>
             </table>
             <div id="history-pagination-container" class="pagination"></div>
+        </div>
+    </div>
+    
+    <div id="change-credentials-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>تغییر اطلاعات ورود</h3>
+            <form id="change-credentials-form">
+                <div class="form-group">
+                    <label for="change-username">نام کاربری جدید (اختیاری)</label>
+                    <input type="text" id="change-username">
+                </div>
+                <div class="form-group">
+                    <label for="change-password">رمز عبور جدید (اختیاری)</label>
+                    <input type="password" id="change-password">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit">ذخیره تغییرات</button>
+                    <button type="button" class="cancel-btn">انصراف</button>
+                </div>
+            </form>
+            <p id="change-creds-status" class="error-message"></p>
         </div>
     </div>
     
