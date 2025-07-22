@@ -2,17 +2,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ❗ مهم: لینک API خود را اینجا قرار دهید
     const API_URL = "https://script.google.com/macros/s/AKfycbyFhhTg_2xf6TqTBdybO883H4f6562sTDUSY8dbQJyN2K-nmFVD7ViTgWllEPwOaf7V/exec";
 
-    // --- ۱. کد نگهبان و بررسی هویت ---
+    // --- ۱. کد نگهبان و بررسی هویت (نسخه اصلاح شده) ---
     const userData = JSON.parse(localStorage.getItem('userData'));
-    if (!userData || !userData.token || userData.role !== 'admin') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const institutionId = urlParams.get('id');
+
+    // اگر کاربر اصلاً لاگین نکرده، او را خارج کن
+    if (!userData || !userData.token) {
         localStorage.removeItem('userData');
         window.location.href = 'index.html';
+        return;
+    }
+
+    // بررسی دسترسی: کاربر باید یا مدیر باشد، یا موسسه‌ای باشد که صفحه خودش را مشاهده می‌کند
+    const isAllowed = (userData.role === 'admin') || (userData.role === 'institute' && userData.institutionId == institutionId);
+
+    if (!isAllowed) {
+        alert("شما اجازه دسترسی به این صفحه را ندارید.");
+        // کاربر را به پنل خودش برمی‌گردانیم
+        if(userData.role === 'admin') window.location.href = 'admin.html';
+        else window.location.href = 'attendance.html';
         return;
     }
 
     // --- شناسایی عناصر ---
     const pageTitle = document.getElementById('manage-page-title');
     const addForm = document.getElementById('add-members-form');
+    // ... بقیه عناصر مثل قبل ...
     const namesTextarea = document.getElementById('names-textarea');
     const idsTextarea = document.getElementById('ids-textarea');
     const mobilesTextarea = document.getElementById('mobiles-textarea');
@@ -23,15 +39,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editForm = document.getElementById('edit-member-form');
     const cancelEditBtn = document.getElementById('cancel-member-edit');
 
-    // --- دریافت شناسه موسسه از آدرس URL ---
-    const urlParams = new URLSearchParams(window.location.search);
-    const institutionId = urlParams.get('id');
+    // --- دریافت نام موسسه از آدرس URL ---
     const institutionName = urlParams.get('name');
-
-    if (!institutionId || !institutionName) {
-        pageTitle.textContent = "خطا: موسسه مشخص نشده است.";
-        return;
-    }
+    if (!institutionId || !institutionName) { pageTitle.textContent = "خطا: موسسه مشخص نشده است."; return; }
     pageTitle.textContent = `مدیریت اعضای موسسه: ${institutionName}`;
 
     // --- تابع کمکی برای تماس با API (با ارسال توکن) ---
@@ -59,9 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function fetchAllMembers() {
         activeMembersBody.innerHTML = '<tr><td colspan="5">در حال بارگذاری...</td></tr>';
         inactiveMembersBody.innerHTML = '<tr><td colspan="5">در حال بارگذاری...</td></tr>';
-
         const result = await apiCall('getAllMembersForAdmin', { institutionId });
-
         if (result.status === 'success') {
             renderTables(result.data);
         } else {
@@ -72,61 +80,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderTables(members) {
         activeMembersBody.innerHTML = '';
         inactiveMembersBody.innerHTML = '';
-        
         if (members.length === 0) {
             activeMembersBody.innerHTML = '<tr><td colspan="5">هیچ عضو فعالی یافت نشد.</td></tr>';
             inactiveMembersBody.innerHTML = '<tr><td colspan="5">هیچ عضو غیرفعالی یافت نشد.</td></tr>';
+        } else {
+            members.forEach(member => {
+                const row = document.createElement('tr');
+                row.dataset.member = JSON.stringify(member);
+                if (member.isActive) {
+                    row.innerHTML = `<td>${member.memberId}</td><td>${member.fullName}</td><td>${member.nationalId}</td><td>${member.mobile}</td><td><button class="edit-btn" data-id="${member.memberId}">ویرایش</button><button class="delete-btn" data-id="${member.memberId}">حذف</button></td>`;
+                    activeMembersBody.appendChild(row);
+                } else {
+                    row.innerHTML = `<td>${member.memberId}</td><td>${member.fullName}</td><td>${member.nationalId}</td><td>${member.mobile}</td><td><button class="restore-btn" data-id="${member.memberId}">بازگردانی</button></td>`;
+                    inactiveMembersBody.appendChild(row);
+                }
+            });
         }
-        
-        members.forEach(member => {
-            const row = document.createElement('tr');
-            row.dataset.member = JSON.stringify(member);
-            
-            if (member.isActive) {
-                row.innerHTML = `
-                    <td>${member.memberId}</td>
-                    <td>${member.fullName}</td>
-                    <td>${member.nationalId}</td>
-                    <td>${member.mobile}</td>
-                    <td>
-                        <button class="edit-btn" data-id="${member.memberId}">ویرایش</button>
-                        <button class="delete-btn" data-id="${member.memberId}">حذف</button>
-                    </td>
-                `;
-                activeMembersBody.appendChild(row);
-            } else {
-                row.innerHTML = `
-                    <td>${member.memberId}</td>
-                    <td>${member.fullName}</td>
-                    <td>${member.nationalId}</td>
-                    <td>${member.mobile}</td>
-                    <td><button class="restore-btn" data-id="${member.memberId}">بازگردانی</button></td>
-                `;
-                inactiveMembersBody.appendChild(row);
-            }
-        });
     }
     
     // --- مدیریت رویدادها ---
     addForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const payload = {
-            institutionId,
-            namesString: namesTextarea.value.trim(),
-            idsString: idsTextarea.value.trim(),
-            mobilesString: mobilesTextarea.value.trim()
-        };
+        const payload = { institutionId, namesString: namesTextarea.value.trim(), idsString: idsTextarea.value.trim(), mobilesString: mobilesTextarea.value.trim() };
         if (!payload.namesString) return;
-
         addStatusMessage.textContent = 'در حال افزودن...';
         const result = await apiCall('addMembersBatch', payload);
-
-        if (result.status === 'success') {
-            addStatusMessage.style.color = 'green';
-            addForm.reset();
-        } else {
-            addStatusMessage.style.color = 'red';
-        }
+        if (result.status === 'success') { addStatusMessage.style.color = 'green'; addForm.reset(); } 
+        else { addStatusMessage.style.color = 'red'; }
         addStatusMessage.textContent = result.data ? result.data.message : result.message;
         fetchAllMembers();
     });
@@ -135,7 +115,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const target = e.target;
         const memberId = target.dataset.id;
         if (!memberId) return;
-
         let action = '';
         if (target.classList.contains('delete-btn')) {
             action = 'deleteMember';
@@ -151,7 +130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             editModal.style.display = 'flex';
             return;
         }
-
         if (action) {
             target.disabled = true;
             await apiCall(action, { institutionId, memberId });
