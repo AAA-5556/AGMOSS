@@ -484,7 +484,6 @@ th {
     background-color: #6c757d;
 }
 
-/* Add Institution Card Style */
 .add-inst-card {
     display: flex;
     flex-direction: column;
@@ -510,7 +509,6 @@ th {
     margin-bottom: 5px;
 }
 
-/* Header Title & Menu Grouping */
 .header-title-menu {
     display: flex;
     align-items: center;
@@ -529,7 +527,6 @@ th {
     left: auto;
 }
 
-/* Settings Page */
 .setting-item {
     display: flex;
     justify-content: space-between;
@@ -587,4 +584,11 @@ th {
         flex-direction: column;
         align-items: stretch;
     }
+}
+
+.admin-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
