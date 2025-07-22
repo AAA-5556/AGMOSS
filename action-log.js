@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- متغیرهای وضعیت ---
     let allLogs = [];
-    let currentFilters = { user: '', actionType: 'all', startDate: null, endDate: null };
+    let currentFilters = { user: '', actionType: 'all', startDate: '', endDate: '' };
     let currentPage = 1;
     const ITEMS_PER_PAGE = 30;
     
@@ -32,10 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         format: 'YYYY/MM/DD',
         autoClose: true,
         initialValue: false,
-        onSelect: function() {
-            // ایجاد رویداد 'change' به صورت دستی تا فیلتر اعمال شود
-            this.el.dispatchEvent(new Event('change'));
-        }
+        onSelect: function() { this.el.dispatchEvent(new Event('change')); }
     });
 
     // --- تابع کمکی برای تماس با API ---
@@ -67,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- منطق فیلترها ---
     function applyFilters() {
         let filtered = [...allLogs];
-        
         if (currentFilters.user) {
             filtered = filtered.filter(log => log.actor.toLowerCase().includes(currentFilters.user.toLowerCase()));
         }
@@ -75,17 +71,15 @@ document.addEventListener('DOMContentLoaded', () => {
             filtered = filtered.filter(log => log.type === currentFilters.actionType);
         }
         if (currentFilters.startDate) {
-            const start = new persianDate(currentFilters.startDate.split('/').map(Number)).startOf('day').toDate().getTime();
             filtered = filtered.filter(log => {
-                const logDate = new persianDate(log.timestamp.split(/,|،/)[0].trim().split('/').map(Number)).toDate().getTime();
-                return logDate >= start;
+                const logDatePart = log.timestamp.split(/,|،/)[0].trim();
+                return logDatePart >= currentFilters.startDate;
             });
         }
         if (currentFilters.endDate) {
-            const end = new persianDate(currentFilters.endDate.split('/').map(Number)).endOf('day').toDate().getTime();
             filtered = filtered.filter(log => {
-                const logDate = new persianDate(log.timestamp.split(/,|،/)[0].trim().split('/').map(Number)).toDate().getTime();
-                return logDate <= end;
+                const logDatePart = log.timestamp.split(/,|،/)[0].trim();
+                return logDatePart <= currentFilters.endDate;
             });
         }
         return filtered;
@@ -106,11 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         resetFiltersButton.addEventListener('click', () => {
-            userFilter.value = ''; actionTypeFilter.value = 'all'; 
-            // ریست کردن تقویم‌ها
+            userFilter.value = ''; actionTypeFilter.value = 'all';
             $(startDateFilter).pDatepicker("clear");
             $(endDateFilter).pDatepicker("clear");
-            
             const changeEvent = new Event('change');
             userFilter.dispatchEvent(changeEvent);
         });
