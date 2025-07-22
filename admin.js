@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             institutionNames[stat.id] = stat.name;
         });
         const adminCard = document.createElement('div');
-        adminCard.className = 'stat-card';
+        adminCard.className = 'stat-card admin-card'; // کلاس جدید اضافه شد
         adminCard.innerHTML = `<h3>${userData.username} (مدیر)</h3><button data-action="edit-user" data-inst-id="0" data-username="${userData.username}" class="admin-edit-btn">ویرایش اطلاعات ورود من</button>`;
         dashboardContainer.appendChild(adminCard);
         const addCard = document.createElement('div');
@@ -79,10 +79,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- ۵. مدیریت منوها و فرم‌ها ---
     mainMenuButton.addEventListener('click', () => { mainMenuDropdown.style.display = mainMenuDropdown.style.display === 'block' ? 'none' : 'block'; });
-
     addInstitutionForm.addEventListener('submit', async (e) => { e.preventDefault(); const username = document.getElementById('new-inst-username').value.trim(); const password = document.getElementById('new-inst-password').value.trim(); if (!username || !password) return; const payload = { username, password, createdBy: userData.username }; addInstStatus.textContent = 'در حال ایجاد...'; const result = await apiCall('addInstitution', payload); if (result.status === 'success') { addInstStatus.style.color = 'green'; addInstStatus.textContent = result.data.message + ' صفحه در حال بارگذاری مجدد است...'; setTimeout(() => location.reload(), 2500); } else { addInstStatus.style.color = 'red'; addInstStatus.textContent = result.message; } });
 
-    // --- Event Listener نهایی و اصلاح شده برای کارت‌ها ---
     dashboardContainer.addEventListener('click', async (e) => {
         const menuButton = e.target.closest('.card-menu-button');
         if (menuButton) {
@@ -94,15 +92,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
             return;
         }
-
         const actionButton = e.target.closest('[data-action]');
         if (actionButton) {
             const action = actionButton.dataset.action;
             const instId = actionButton.dataset.instId;
             const username = actionButton.dataset.username;
-
             document.querySelectorAll('.card-menu-dropdown').forEach(m => m.style.display = 'none');
-            
             if (action === 'edit-user') {
                 openEditModal(instId, username);
             } else if (action === 'manage-members') {
