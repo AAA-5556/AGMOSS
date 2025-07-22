@@ -10,8 +10,8 @@
 
     <div class="container">
         <header class="page-header">
-            <h2>پنل مدیریت</h2>
-            <div class="header-actions">
+            <div class="header-title-menu">
+                <h2>پنل مدیریت</h2>
                 <div class="main-menu-container">
                     <button id="main-menu-button" class="card-menu-button">⋮</button>
                     <div id="main-menu-dropdown" class="card-menu-dropdown">
@@ -19,9 +19,27 @@
                         <a href="settings.html">تنظیمات</a>
                     </div>
                 </div>
+            </div>
+            <div class="header-actions">
                 <button id="logout-button">خروج</button>
             </div>
         </header>
+
+        <div class="card">
+            <h3>افزودن موسسه جدید</h3>
+            <form id="add-institution-form" class="add-inst-form">
+                <div class="form-group">
+                    <label for="new-inst-username">نام کاربری جدید</label>
+                    <input type="text" id="new-inst-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-inst-password">رمز عبور جدید</label>
+                    <input type="text" id="new-inst-password" required>
+                </div>
+                <button type="submit">ایجاد موسسه</button>
+            </form>
+            <p id="add-inst-status" class="error-message"></p>
+        </div>
 
         <div id="dashboard-container" class="dashboard">
             </div>
