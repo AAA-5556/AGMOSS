@@ -1,59 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ❗ مهم: لینک API خود را اینجا قرار دهید
-    const API_URL = "https://script.google.com/macros/s/AKfycbyFhhTg_2xf6TqTBdybO883H4f6562sTDUSY8dbQJyN2K-nmFVD7ViTgWllEPwOaf7V/exec";
+    // ... (بخش ۱: کد نگهبان مثل قبل) ...
 
-    // --- ۱. کد نگهبان و بررسی هویت ---
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    if (!userData || !userData.token || userData.role !== 'admin') {
-        localStorage.removeItem('userData');
-        window.location.href = 'index.html';
-        return;
-    }
-
-    // --- شناسایی عناصر ---
-    const logTableBody = document.getElementById('log-table-body');
-    const loadingMessage = document.getElementById('loading-log');
-    const userFilter = document.getElementById('user-filter');
-    const actionTypeFilter = document.getElementById('action-type-filter');
-    const startDateFilter = document.getElementById('start-date-filter');
-    const endDateFilter = document.getElementById('end-date-filter');
-    const resetFiltersButton = document.getElementById('reset-filters-log');
-    const exportExcelButton = document.getElementById('export-excel');
-    const paginationContainer = document.getElementById('pagination-container');
-
-    // --- متغیرهای وضعیت ---
-    let allLogs = [];
-    let currentFilters = { user: '', actionType: 'all', startDate: '', endDate: '' };
-    let currentPage = 1;
-    const ITEMS_PER_PAGE = 30;
-    
-    // --- تابع کمکی برای تماس با API ---
-    async function apiCall(action, payload) {
-        try {
-            const token = userData.token;
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action, payload, token })
-            });
-            const result = await response.json();
-            if (result.status === 'error' && (result.message.includes('منقضی') || result.message.includes('نامعتبر'))) {
-                alert(result.message);
-                localStorage.removeItem('userData');
-                window.location.href = 'index.html';
-            }
-            return result;
-        } catch (error) {
-            return { status: 'error', message: 'خطا در ارتباط با سرور.' };
+    // --- توابع کمکی جدید ---
+    const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+    const arabicNumbers  = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+    function normalizeNumbers(str) {
+        if(typeof str !== 'string') return '';
+        for(let i = 0; i < 10; i++) {
+            str = str.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
         }
+        return str;
+    }
+    
+    function formatDateInput(input) {
+        let value = normalizeNumbers(input.value).replace(/[^\d]/g, '');
+        if (value.length > 4) {
+            value = value.slice(0, 4) + '/' + value.slice(4);
+        }
+        if (value.length > 7) {
+            value = value.slice(0, 7) + '/' + value.slice(7, 9);
+        }
+        input.value = value;
     }
 
-    // --- توابع نمایش ---
-    function renderPage() { const filteredLogs = applyFilters(); const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE); currentPage = Math.min(currentPage, totalPages || 1); const startIndex = (currentPage - 1) * ITEMS_PER_PAGE; const pageRecords = filteredLogs.slice(startIndex, startIndex + ITEMS_PER_PAGE); renderTable(pageRecords); renderPagination(totalPages); }
-    function renderTable(logs) { logTableBody.innerHTML = ''; if (logs.length === 0) { logTableBody.innerHTML = '<tr><td colspan="5">رکوردی یافت نشد.</td></tr>'; return; } logs.forEach(log => { const row = document.createElement('tr'); row.innerHTML = `<td>${log.timestamp}</td><td>${log.actor}</td><td>${log.role === 'admin' ? 'مدیر' : 'موسسه'}</td><td>${log.type}</td><td>${log.desc}</td>`; logTableBody.appendChild(row); }); }
-    function renderPagination(totalPages) { paginationContainer.innerHTML = ''; if (totalPages <= 1) return; for (let i = 1; i <= totalPages; i++) { const pageButton = document.createElement('button'); pageButton.textContent = i; if (i === currentPage) pageButton.classList.add('active'); pageButton.addEventListener('click', () => { currentPage = i; renderPage(); }); paginationContainer.appendChild(pageButton); } }
-    function populateActionFilter(logs) { const actionTypes = [...new Set(logs.map(log => log.type))]; actionTypes.forEach(type => { const option = document.createElement('option'); option.value = type; option.textContent = type; actionTypeFilter.appendChild(option); }); }
+    // ... (شناسایی عناصر و متغیرها مثل قبل) ...
 
-    // --- منطق فیلترها ---
+    // --- منطق فیلترها (اصلاح شده) ---
     function applyFilters() {
         let filtered = [...allLogs];
         if (currentFilters.user) {
@@ -62,26 +34,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentFilters.actionType !== 'all') {
             filtered = filtered.filter(log => log.type === currentFilters.actionType);
         }
-        if (startDateFilter.value.trim()) {
-            filtered = filtered.filter(log => log.timestamp.split(/,|،/)[0].trim() >= startDateFilter.value.trim());
+        const startDate = normalizeNumbers(startDateFilter.value.trim());
+        if (startDate) {
+            filtered = filtered.filter(log => normalizeNumbers(log.timestamp.split(/,|،/)[0].trim()) >= startDate);
         }
-        if (endDateFilter.value.trim()) {
-            filtered = filtered.filter(log => log.timestamp.split(/,|،/)[0].trim() <= endDateFilter.value.trim());
+        const endDate = normalizeNumbers(endDateFilter.value.trim());
+        if (endDate) {
+            filtered = filtered.filter(log => normalizeNumbers(log.timestamp.split(/,|،/)[0].trim()) <= endDate);
         }
         return filtered;
     }
 
-    // --- مدیریت رویدادها ---
+    // --- مدیریت رویدادها (اصلاح شده) ---
     function setupEventListeners() {
-        const filters = [userFilter, actionTypeFilter, startDateFilter, endDateFilter];
-        filters.forEach(filter => {
-            filter.addEventListener('input', () => {
-                currentFilters.user = userFilter.value;
-                currentFilters.actionType = actionTypeFilter.value;
-                currentPage = 1;
-                renderPage();
-            });
-        });
+        // رویداد برای فیلترهای متنی و کشویی
+        userFilter.addEventListener('input', () => { currentFilters.user = userFilter.value; currentPage = 1; renderPage(); });
+        actionTypeFilter.addEventListener('change', () => { currentFilters.actionType = actionTypeFilter.value; currentPage = 1; renderPage(); });
+
+        // رویداد برای فیلترهای تاریخ با فرمت خودکار
+        startDateFilter.addEventListener('input', () => { formatDateInput(startDateFilter); currentPage = 1; renderPage(); });
+        endDateFilter.addEventListener('input', () => { formatDateInput(endDateFilter); currentPage = 1; renderPage(); });
         
         resetFiltersButton.addEventListener('click', () => {
             userFilter.value = ''; 
@@ -89,32 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
             startDateFilter.value = '';
             endDateFilter.value = '';
             const changeEvent = new Event('input');
-            userFilter.dispatchEvent(changeEvent);
+            userFilter.dispatchEvent(changeEvent); // یک رویداد کافی است تا همه فیلترها ریست شوند
         });
 
-        exportExcelButton.addEventListener('click', () => {
-            const dataToExport = applyFilters().map(log => ({ "تاریخ و زمان": log.timestamp, "کاربر": log.actor, "نقش": log.role === 'admin' ? 'مدیر' : 'موسسه', "نوع عمل": log.type, "توضیحات": log.desc }));
-            if (dataToExport.length === 0) { alert("داده‌ای برای خروجی گرفتن وجود ندارد."); return; }
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "تاریخچه تغییرات");
-            XLSX.writeFile(workbook, "ActionLog.xlsx");
-        });
+        exportExcelButton.addEventListener('click', () => { /* ... کد قبلی ... */ });
     }
     
-    // --- بارگذاری اولیه ---
-    async function fetchActionLog() {
-        const result = await apiCall('getActionLog', {});
-        if (result.status === 'success') {
-            loadingMessage.style.display = 'none';
-            allLogs = result.data;
-            populateActionFilter(allLogs);
-            renderPage();
-        } else {
-            loadingMessage.textContent = 'خطا در بارگذاری تاریخچه: ' + result.message;
-        }
-    }
-
-    setupEventListeners();
-    fetchActionLog();
+    // ... (بقیه کد فایل مثل قبل است) ...
 });
