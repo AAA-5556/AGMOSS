@@ -7,10 +7,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!userData || !userData.token || userData.role !== 'admin') {
         localStorage.removeItem('userData');
         window.location.href = 'index.html';
-        return;
+        return; 
     }
 
-    // --- توابع کمکی جدید ---
+    // --- توابع کمکی ---
     const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
     const arabicNumbers  = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
     function normalizeNumbers(str) {
@@ -124,8 +124,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         exportExcelButton.addEventListener('click', () => { const dataToExport = applyAllFilters().map(record => ({ "موسسه": institutionNames[record.institutionId] || `(شناسه: ${record.institutionId})`, "نام عضو": memberNames[record.memberId] || `(شناسه: ${record.memberId})`, "تاریخ و زمان": record.date, "وضعیت": record.status, })); if (dataToExport.length === 0) { alert("داده‌ای برای خروجی گرفتن وجود ندارد."); return; } const worksheet = XLSX.utils.json_to_sheet(dataToExport); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "گزارش حضور و غیاب"); XLSX.writeFile(workbook, "AttendanceReport.xlsx"); });
     }
     
-    // --- بارگذاری اولیه ---
-    async function initializeAdminPanel() { /* ... کد قبلی ... */ }
+    // --- بارگذاری اولیه و رفرش خودکار ---
+    async function refreshData() { try { const [dashboardResult, adminDataResult] = await Promise.all([ apiCall('getDashboardStats', {}), apiCall('getAdminData', {}) ]); if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); } if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); } } catch (error) { console.error("خطا در رفرش خودکار:", error); } }
+    async function initializeAdminPanel() {
+        loadingMessage.textContent = 'در حال بارگذاری...';
+        try {
+            const [dashboardResult, adminDataResult, ...memberResults] = await Promise.all([
+                apiCall('getDashboardStats', {}),
+                apiCall('getAdminData', {}),
+                ...Array.from({length: 15}, (_, i) => i + 1).map(id => apiCall('getMembers', { institutionId: id }))
+            ]);
+            if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); }
+            memberResults.forEach(res => { if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); } });
+            if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); }
+            loadingMessage.style.display = 'none';
+            setInterval(refreshData, 30000);
+        } catch (error) {
+            console.error('خطا در بارگذاری پنل مدیر:', error);
+            loadingMessage.textContent = 'خطا در ارتباط با سرور.';
+        }
+    }
     
     setupEventListeners();
     initializeAdminPanel();
