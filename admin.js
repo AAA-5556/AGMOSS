@@ -23,11 +23,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     function formatDateInput(input) {
         let value = normalizeNumbers(input.value).replace(/[^\d]/g, '');
-        if (value.length > 4) {
+        if (value.length > 8) value = value.slice(0, 8);
+        if (value.length > 6) {
+            value = value.slice(0, 4) + '/' + value.slice(4, 6) + '/' + value.slice(6);
+        } else if (value.length > 4) {
             value = value.slice(0, 4) + '/' + value.slice(4);
-        }
-        if (value.length > 7) {
-            value = value.slice(0, 7) + '/' + value.slice(7, 9);
         }
         input.value = value;
     }
@@ -137,6 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (dashboardResult.status === 'success') { renderDashboard(dashboardResult.data); }
             memberResults.forEach(res => { if (res.status === 'success') { res.data.forEach(member => { memberNames[member.memberId] = member.fullName; }); } });
             if (adminDataResult.status === 'success') { allRecords = adminDataResult.data.reverse(); renderPage(); }
+            
             loadingMessage.style.display = 'none';
             setInterval(refreshData, 30000);
         } catch (error) {
