@@ -23,11 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function formatDateInput(input) {
         let value = normalizeNumbers(input.value).replace(/[^\d]/g, '');
-        if (value.length > 4) {
+        if (value.length > 8) value = value.slice(0, 8);
+        if (value.length > 6) {
+            value = value.slice(0, 4) + '/' + value.slice(4, 6) + '/' + value.slice(6);
+        } else if (value.length > 4) {
             value = value.slice(0, 4) + '/' + value.slice(4);
-        }
-        if (value.length > 7) {
-            value = value.slice(0, 7) + '/' + value.slice(7, 9);
         }
         input.value = value;
     }
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFilters = { user: '', actionType: 'all', startDate: '', endDate: '' };
     let currentPage = 1;
     const ITEMS_PER_PAGE = 30;
-
+    
     // --- تابع کمکی برای تماس با API ---
     async function apiCall(action, payload) {
         try {
