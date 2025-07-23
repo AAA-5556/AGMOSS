@@ -27,14 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPage = 1;
     const ITEMS_PER_PAGE = 30;
     
-    // --- فعال‌سازی تقویم شمسی ---
-    $("#start-date-filter, #end-date-filter").pDatepicker({
-        format: 'YYYY/MM/DD',
-        autoClose: true,
-        initialValue: false,
-        onSelect: function() { this.el.dispatchEvent(new Event('change')); }
-    });
-
     // --- تابع کمکی برای تماس با API ---
     async function apiCall(action, payload) {
         try {
@@ -64,24 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- منطق فیلترها ---
     function applyFilters() {
         let filtered = [...allLogs];
-        
         if (currentFilters.user) {
             filtered = filtered.filter(log => log.actor.toLowerCase().includes(currentFilters.user.toLowerCase()));
         }
         if (currentFilters.actionType !== 'all') {
             filtered = filtered.filter(log => log.type === currentFilters.actionType);
         }
-        if (currentFilters.startDate) {
-            filtered = filtered.filter(log => {
-                const logDatePart = log.timestamp.split(/,|،/)[0].trim();
-                return logDatePart >= currentFilters.startDate;
-            });
+        if (startDateFilter.value.trim()) {
+            filtered = filtered.filter(log => log.timestamp.split(/,|،/)[0].trim() >= startDateFilter.value.trim());
         }
-        if (currentFilters.endDate) {
-            filtered = filtered.filter(log => {
-                const logDatePart = log.timestamp.split(/,|،/)[0].trim();
-                return logDatePart <= currentFilters.endDate;
-            });
+        if (endDateFilter.value.trim()) {
+            filtered = filtered.filter(log => log.timestamp.split(/,|،/)[0].trim() <= endDateFilter.value.trim());
         }
         return filtered;
     }
@@ -90,11 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupEventListeners() {
         const filters = [userFilter, actionTypeFilter, startDateFilter, endDateFilter];
         filters.forEach(filter => {
-            filter.addEventListener('change', () => {
+            filter.addEventListener('input', () => {
                 currentFilters.user = userFilter.value;
                 currentFilters.actionType = actionTypeFilter.value;
-                currentFilters.startDate = startDateFilter.value;
-                currentFilters.endDate = endDateFilter.value;
                 currentPage = 1;
                 renderPage();
             });
@@ -103,13 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
         resetFiltersButton.addEventListener('click', () => {
             userFilter.value = ''; 
             actionTypeFilter.value = 'all';
-            $(startDateFilter).pDatepicker("clear");
-            $(endDateFilter).pDatepicker("clear");
-            startDateFilter.value = ''; // Clear the text value as well
+            startDateFilter.value = '';
             endDateFilter.value = '';
-            
-            // Dispatch the change event to re-apply filters
-            const changeEvent = new Event('change');
+            const changeEvent = new Event('input');
             userFilter.dispatchEvent(changeEvent);
         });
 
