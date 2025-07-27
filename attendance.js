@@ -2,41 +2,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // ❗ مهم: لینک API خود را اینجا قرار دهید
     const API_URL = "https://script.google.com/macros/s/AKfycbyFhhTg_2xf6TqTBdybO883H4f6562sTDUSY8dbQJyN2K-nmFVD7ViTgWllEPwOaf7V/exec";
 
-    // --- ۱. کد نگهبان و بررسی هویت ---
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    if (!userData || !userData.token || userData.role !== 'institute') {
-        localStorage.removeItem('userData');
-        window.location.href = 'index.html';
-        return; 
-    }
-
     // --- شناسایی عناصر عمومی ---
     const instituteNameEl = document.getElementById('institute-name');
     const logoutButton = document.getElementById('logout-button');
     const instMenuContainer = document.getElementById('inst-menu-container');
     const instMenuButton = document.getElementById('inst-menu-button');
     const instMenuDropdown = document.getElementById('inst-menu-dropdown');
-    
+
     // --- متغیرهای عمومی ---
+    const userData = JSON.parse(localStorage.getItem('userData'));
     let membersMap = {}; 
     let historyInitialized = false;
 
-    // --- تابع کمکی برای تماس با API (با ارسال توکن) ---
+    // --- بررسی اولیه ورود کاربر ---
+    if (!userData || userData.role !== 'institute') {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // --- تابع کمکی برای تماس با API ---
     async function apiCall(action, payload) {
         try {
             const token = JSON.parse(localStorage.getItem('userData')).token;
-            if (!token) {
-                localStorage.removeItem('userData');
-                window.location.href = 'index.html';
-                return;
-            }
-            
             const response = await fetch(API_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action, payload, token })
             });
             const result = await response.json();
-            
             if (result.status === 'error' && (result.message.includes('منقضی') || result.message.includes('نامعتبر'))) {
                 alert(result.message);
                 localStorage.removeItem('userData');
@@ -49,13 +41,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- راه‌اندازی اولیه صفحه ---
+    // =================================================================
+    // بخش ۱: راه‌اندازی اولیه صفحه
+    // =================================================================
     function initializePage() {
         instituteNameEl.textContent = `پنل موسسه (${userData.username})`;
         logoutButton.addEventListener('click', () => {
             localStorage.removeItem('userData');
             window.location.href = 'index.html';
         });
+
         checkPermissions();
         setupTabs();
         setupModals();
@@ -87,7 +82,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- مدیریت تب‌ها، مودال‌ها و منوها ---
+    // =================================================================
+    // بخش ۲: مدیریت تب‌ها، مودال‌ها و منوها
+    // =================================================================
     function setupTabs() {
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
@@ -95,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
                 button.classList.add('active');
                 document.getElementById(button.dataset.tab + '-tab').classList.add('active');
+                
                 if (button.dataset.tab === 'history' && !historyInitialized) {
                     initializeHistoryTab();
                     historyInitialized = true;
@@ -107,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const changeCredentialsModal = document.getElementById('change-credentials-modal');
         const changeCredentialsForm = document.getElementById('change-credentials-form');
         const changeCredentialsBtn = document.getElementById('change-credentials-btn');
+
         changeCredentialsBtn.addEventListener('click', () => {
             instMenuDropdown.style.display = 'none';
             changeCredentialsModal.style.display = 'flex';
@@ -147,29 +146,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- منطق تب ثبت حضور و غیاب ---
+
+    // =================================================================
+    // بخش ۳: منطق تب ثبت حضور و غیاب
+    // =================================================================
     async function initializeRegisterTab() { 
         const currentDateEl = document.getElementById('current-date');
         const memberListBody = document.getElementById('member-list-body');
+        
         currentDateEl.textContent = new Date().toLocaleDateString('fa-IR');
-        memberListBody.innerHTML = '<tr><td colspan="2">در حال بارگذاری...</td></tr>'; 
+        memberListBody.innerHTML = '<tr><td colspan="3">در حال بارگذاری...</td></tr>'; 
+        
         const [membersResult, todaysAttendanceResult] = await Promise.all([ 
             apiCall('getMembers', {}), 
             apiCall('getTodaysAttendance', {}) 
         ]); 
-        if (membersResult.status !== 'success') { memberListBody.innerHTML = '<tr><td colspan="2">خطا در دریافت لیست اعضا.</td></tr>'; return; } 
+        
+        if (membersResult.status !== 'success') { memberListBody.innerHTML = '<tr><td colspan="3">خطا در دریافت لیست اعضا.</td></tr>'; return; } 
+        
         const members = membersResult.data; 
         members.forEach(m => membersMap[m.memberId] = m.fullName); 
         let todaysAttendance = {}; 
         if (todaysAttendanceResult.status === 'success') { todaysAttendanceResult.data.forEach(r => { todaysAttendance[r.memberId] = r.status; });} 
+        
         memberListBody.innerHTML = ''; 
-        if (members.length === 0) { memberListBody.innerHTML = `<tr><td colspan="2">هیچ عضو فعالی یافت نشد.</td></tr>`; return; } 
+        if (members.length === 0) { memberListBody.innerHTML = `<tr><td colspan="3">هیچ عضو فعالی یافت نشد.</td></tr>`; return; } 
+        
         members.forEach(member => { 
             const previousStatus = todaysAttendance[member.memberId]; 
             const isPresentChecked = previousStatus === 'حاضر' ? 'checked' : ''; 
             const isAbsentChecked = previousStatus === 'غایب' ? 'checked' : ''; 
             const row = document.createElement('tr'); 
-            row.innerHTML = `<td>${member.fullName}</td><td><input type="radio" id="present-${member.memberId}" name="status-${member.memberId}" value="حاضر" ${isPresentChecked} required><label for="present-${member.memberId}">حاضر</label><input type="radio" id="absent-${member.memberId}" name="status-${member.memberId}" value="غایب" ${isAbsentChecked}><label for="absent-${member.memberId}">غایب</label></td>`; 
+            row.innerHTML = `
+                <td>${member.fullName}</td>
+                <td>${member.nationalId}</td>
+                <td><input type="radio" id="present-${member.memberId}" name="status-${member.memberId}" value="حاضر" ${isPresentChecked} required><label for="present-${member.memberId}">حاضر</label><input type="radio" id="absent-${member.memberId}" name="status-${member.memberId}" value="غایب" ${isAbsentChecked}><label for="absent-${member.memberId}">غایب</label></td>
+            `; 
             row.dataset.memberId = member.memberId; 
             memberListBody.appendChild(row); 
         }); 
@@ -204,7 +216,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     });
     
-    // --- منطق تب تاریخچه ---
+    // =================================================================
+    // بخش ۴: منطق تب تاریخچه
+    // =================================================================
     function initializeHistoryTab() {
         let fullHistory = [];
         let currentHistoryFilters = { status: 'all' };
@@ -227,12 +241,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function renderHistoryTable(records) {
-            historyTableBody.innerHTML = ''; let lastDate = null; if (records.length === 0) { historyTableBody.innerHTML = '<tr><td colspan="3">سابقه‌ای یافت نشد.</td></tr>'; return; }
+            historyTableBody.innerHTML = ''; let lastDate = null; if (records.length === 0) { historyTableBody.innerHTML = '<tr><td colspan="4">سابقه‌ای یافت نشد.</td></tr>'; return; }
             records.forEach(record => {
                 const recordDate = record.date.split(/,|،/)[0].trim();
-                if (recordDate !== lastDate) { const dateRow = document.createElement('tr'); dateRow.innerHTML = `<td colspan="3" class="date-group-header">تاریخ: ${recordDate}</td>`; historyTableBody.appendChild(dateRow); lastDate = recordDate; }
-                const row = document.createElement('tr'); const memberName = membersMap[record.memberId] || `(شناسه: ${record.memberId})`;
-                row.innerHTML = `<td>${record.date}</td><td>${memberName}</td><td>${record.status}</td>`;
+                if (recordDate !== lastDate) { const dateRow = document.createElement('tr'); dateRow.innerHTML = `<td colspan="4" class="date-group-header">تاریخ: ${recordDate}</td>`; historyTableBody.appendChild(dateRow); lastDate = recordDate; }
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.fullName}</td>
+                    <td>${record.nationalId}</td>
+                    <td>${record.status}</td>`;
                 historyTableBody.appendChild(row);
             });
         }
@@ -248,13 +266,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         async function fetchHistory() {
-            historyTableBody.innerHTML = '<tr><td colspan="3">در حال بارگذاری تاریخچه...</td></tr>';
+            historyTableBody.innerHTML = '<tr><td colspan="4">در حال بارگذاری تاریخچه...</td></tr>';
             const result = await apiCall('getInstitutionHistory', {});
             if (result.status === 'success') {
                 fullHistory = result.data;
                 renderHistoryPage();
             } else {
-                 historyTableBody.innerHTML = `<tr><td colspan="3">خطا در بارگذاری تاریخچه.</td></tr>`;
+                 historyTableBody.innerHTML = `<tr><td colspan="4">خطا در بارگذاری تاریخچه.</td></tr>`;
             }
         }
         
@@ -272,7 +290,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let filteredHistory = [...fullHistory]; 
             if (currentHistoryFilters.status !== 'all') { filteredHistory = filteredHistory.filter(r => r.status === currentHistoryFilters.status); } 
             if (filteredHistory.length === 0) { alert('داده‌ای برای خروجی گرفتن وجود ندارد.'); return; } 
-            const dataToExport = filteredHistory.map(record => ({ "تاریخ و زمان": record.date, "نام عضو": membersMap[record.memberId] || `(شناسه: ${record.memberId})`, "وضعیت": record.status })); 
+            const dataToExport = filteredHistory.map(record => ({ 
+                "تاریخ و زمان": record.date, 
+                "نام عضو": record.fullName,
+                "کد ملی": record.nationalId,
+                "وضعیت": record.status 
+            })); 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport); 
             const workbook = XLSX.utils.book_new(); 
             XLSX.utils.book_append_sheet(workbook, worksheet, "تاریخچه حضور و غیاب"); 
