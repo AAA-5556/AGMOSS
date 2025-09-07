@@ -10,23 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // --- شناسایی عناصر ---
-    const logTableBody = document.getElementById('log-table-body');
-    const loadingMessage = document.getElementById('loading-log');
-    const userFilter = document.getElementById('user-filter');
-    const actionTypeFilter = document.getElementById('action-type-filter');
-    const startDateFilter = document.getElementById('start-date-filter');
-    const endDateFilter = document.getElementById('end-date-filter');
-    const resetFiltersButton = document.getElementById('reset-filters-log');
-    const exportExcelButton = document.getElementById('export-excel');
-    const paginationContainer = document.getElementById('pagination-container');
-
-    // --- متغیرهای وضعیت ---
-    let allLogs = [];
-    let currentFilters = { user: '', actionType: 'all', startDate: '', endDate: '' };
-    let currentPage = 1;
-    const ITEMS_PER_PAGE = 30;
-    
     // --- توابع کمکی ---
     const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
     const arabicNumbers  = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
@@ -49,6 +32,23 @@ document.addEventListener('DOMContentLoaded', () => {
         input.value = value;
     }
 
+    // --- شناسایی عناصر ---
+    const logTableBody = document.getElementById('log-table-body');
+    const loadingMessage = document.getElementById('loading-log');
+    const userFilter = document.getElementById('user-filter');
+    const actionTypeFilter = document.getElementById('action-type-filter');
+    const startDateFilter = document.getElementById('start-date-filter');
+    const endDateFilter = document.getElementById('end-date-filter');
+    const resetFiltersButton = document.getElementById('reset-filters-log');
+    const exportExcelButton = document.getElementById('export-excel');
+    const paginationContainer = document.getElementById('pagination-container');
+
+    // --- متغیرهای وضعیت ---
+    let allLogs = [];
+    let currentFilters = { user: '', actionType: 'all', startDate: '', endDate: '' };
+    let currentPage = 1;
+    const ITEMS_PER_PAGE = 30;
+    
     // --- تابع کمکی برای تماس با API ---
     async function apiCall(action, payload) {
         try {
@@ -70,9 +70,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- توابع نمایش ---
-    function renderPage() { const filteredLogs = applyFilters(); const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE); currentPage = Math.min(currentPage, totalPages || 1); const startIndex = (currentPage - 1) * ITEMS_PER_PAGE; const pageRecords = filteredLogs.slice(startIndex, startIndex + ITEMS_PER_PAGE); renderTable(pageRecords); renderPagination(totalPages); }
-    function renderTable(logs) { logTableBody.innerHTML = ''; if (logs.length === 0) { logTableBody.innerHTML = '<tr><td colspan="5">رکوردی یافت نشد.</td></tr>'; return; } logs.forEach(log => { const row = document.createElement('tr'); row.innerHTML = `<td>${log.timestamp}</td><td>${log.actor}</td><td>${log.role === 'admin' ? 'مدیر' : 'موسسه'}</td><td>${log.type}</td><td>${log.desc}</td>`; logTableBody.appendChild(row); }); }
+    function renderPage() { 
+        const filteredLogs = applyFilters(); 
+        const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE); 
+        currentPage = Math.min(currentPage, totalPages || 1); 
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE; 
+        const pageRecords = filteredLogs.slice(startIndex, startIndex + ITEMS_PER_PAGE); 
+        renderTable(pageRecords); 
+        renderPagination(totalPages); 
+    }
     
+    function renderTable(logs) { 
+        logTableBody.innerHTML = ''; 
+        if (logs.length === 0) { 
+            logTableBody.innerHTML = '<tr><td colspan="5">رکوردی یافت نشد.</td></tr>'; 
+            return; 
+        } 
+        logs.forEach(log => { 
+            const row = document.createElement('tr'); 
+            row.innerHTML = `<td>${log.timestamp}</td><td>${log.actor}</td><td>${log.role === 'admin' ? 'مدیر' : 'موسسه'}</td><td>${log.type}</td><td>${log.desc}</td>`; 
+            logTableBody.appendChild(row); 
+        }); 
+    }
+
     function renderPagination(totalPages) {
         paginationContainer.innerHTML = '';
         if (totalPages <= 1) return;
@@ -121,11 +141,20 @@ document.addEventListener('DOMContentLoaded', () => {
         paginationContainer.appendChild(nextButton);
     }
     
-    function populateActionFilter(logs) { const actionTypes = [...new Set(logs.map(log => log.type))]; actionTypes.forEach(type => { const option = document.createElement('option'); option.value = type; option.textContent = type; actionTypeFilter.appendChild(option); }); }
+    function populateActionFilter(logs) { 
+        const actionTypes = [...new Set(logs.map(log => log.type))]; 
+        actionTypes.forEach(type => { 
+            const option = document.createElement('option'); 
+            option.value = type; 
+            option.textContent = type; 
+            actionTypeFilter.appendChild(option); 
+        }); 
+    }
 
     // --- منطق فیلترها ---
     function applyFilters() {
         let filtered = [...allLogs];
+        
         if (currentFilters.user) {
             filtered = filtered.filter(log => log.actor.toLowerCase().includes(currentFilters.user.toLowerCase()));
         }
@@ -168,7 +197,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         exportExcelButton.addEventListener('click', () => {
             const dataToExport = applyFilters().map(log => ({ "تاریخ و زمان": log.timestamp, "کاربر": log.actor, "نقش": log.role === 'admin' ? 'مدیر' : 'موسسه', "نوع عمل": log.type, "توضیحات": log.desc }));
-            if (dataToExport.length === 0) { alert("داده‌ای برای خروجی گرفتن وجود ندارد."); return; }
+            if (dataToExport.length === 0) { 
+                alert("داده‌ای برای خروجی گرفتن وجود ندارد."); 
+                return; 
+            }
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "تاریخچه تغییرات");
