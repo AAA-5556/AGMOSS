@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (membersResult.status !== 'success') { memberListBody.innerHTML = '<tr><td colspan="3">خطا در دریافت لیست اعضا.</td></tr>'; return; } 
         
         const members = membersResult.data; 
-        members.forEach(m => membersMap[m.memberId] = m.fullName); 
+        members.forEach(m => membersMap[m.memberId] = m); // ذخیره اطلاعات کامل عضو
         let todaysAttendance = {}; 
         if (todaysAttendanceResult.status === 'success') { todaysAttendanceResult.data.forEach(r => { todaysAttendance[r.memberId] = r.status; });} 
         
@@ -183,7 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPresentChecked = previousStatus === 'حاضر' ? 'checked' : ''; 
             const isAbsentChecked = previousStatus === 'غایب' ? 'checked' : ''; 
             const row = document.createElement('tr'); 
-            row.innerHTML = `<td>${member.fullName}</td><td>${member.nationalId}</td><td><input type="radio" id="present-${member.memberId}" name="status-${member.memberId}" value="حاضر" ${isPresentChecked} required><label for="present-${member.memberId}">حاضر</label><input type="radio" id="absent-${member.memberId}" name="status-${member.memberId}" value="غایب" ${isAbsentChecked}><label for="absent-${member.memberId}">غایب</label></td>`; 
+            row.innerHTML = `
+                <td>${member.fullName}</td>
+                <td>${member.nationalId}</td>
+                <td><input type="radio" id="present-${member.memberId}" name="status-${member.memberId}" value="حاضر" ${isPresentChecked} required><label for="present-${member.memberId}">حاضر</label><input type="radio" id="absent-${member.memberId}" name="status-${member.memberId}" value="غایب" ${isAbsentChecked}><label for="absent-${member.memberId}">غایب</label></td>
+            `; 
             row.dataset.memberId = member.memberId; 
             memberListBody.appendChild(row); 
         }); 
@@ -248,7 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const recordDate = record.date.split(/,|،/)[0].trim();
                 if (recordDate !== lastDate) { const dateRow = document.createElement('tr'); dateRow.innerHTML = `<td colspan="4" class="date-group-header">تاریخ: ${recordDate}</td>`; historyTableBody.appendChild(dateRow); lastDate = recordDate; }
                 const row = document.createElement('tr');
-                row.innerHTML = `<td>${record.date}</td><td>${record.fullName}</td><td>${record.nationalId}</td><td>${record.status}</td>`;
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.fullName}</td>
+                    <td>${record.nationalId}</td>
+                    <td>${record.status}</td>`;
                 historyTableBody.appendChild(row);
             });
         }
